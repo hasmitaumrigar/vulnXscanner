@@ -9,3 +9,4 @@ reportlab==4.0.9
 google-generativeai
 google-genai
 python-dotenv
+dnspython==2.6.1

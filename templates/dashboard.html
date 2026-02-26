@@ -17,10 +17,18 @@
             </button>
         </div>
         <div class="options-bar">
-            <label><input type="checkbox" name="deep" id="deepScan" {{ 'checked' if deep_scan else '' }}> Deep Scan
-                (1-1024)</label>
+            <label><input type="checkbox" name="deep" id="deepScan" {{ 'checked' if deep_scan else '' }} onchange="toggleDeepScanWarning()"> 
+                <span class="deep-scan-label">
+                    <span class="scan-mode-text">Deep Scan</span>
+                    <span class="port-range">1-65535</span>
+                </span>
+            </label>
             <label><input type="checkbox" checked> OS Detection</label>
             <label><input type="checkbox" checked> Aggressive Mode</label>
+        </div>
+        <div id="deepScanWarning" class="deep-scan-warning" style="display: none;">
+            <i data-lucide="alert-triangle" class="warning-icon"></i>
+            <span class="warning-text">Deep scan enabled: Will scan 65,535 ports (slower, ~5-15 mins for responsive servers)</span>
         </div>
     </form>
     {% if results is not none or log_lines %} 
@@ -54,8 +62,13 @@
                 <span class="remediation-label">Remediation Guide</span>
                 {{ threat }}
             </div>
-            <div class="ai-hint">
-                🔍 Click for AI expert analysis
+            <div class="ai-hint" role="button" tabindex="0">
+                <svg class="ai-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2l1.5 3.3L17 6l-3 2.2L14 11l-2-1.6L10 11l.9-2.8L8 6l3.5-.7L12 2z"></path>
+                    <path d="M5 12l.7 1.6L7.5 14l-1.8 1.1L5 16.5 4.3 15.1 3 14l1.3-1 1.7-.6z"></path>
+                    <path d="M20 12l.5 1.1L21.5 14l-1.3.8L20 16l-.5-1.2L18 14l1.5-1.8L20 12z"></path>
+                </svg>
+                <span>Click for AI expert analysis</span>
             </div>
         </div>
         {% endfor %}

@@ -3,9 +3,45 @@
 {% block title %}Scan History | VulnX{% endblock %}
 
 {% block content %}
-<div class="header">
-    <h1>📋 Scan History</h1>
-    <p>Review your previous security scans.</p>
+<div class="history-header">
+    <div class="header-content">
+        <div>
+            <h1><i data-lucide="history" class="header-icon"></i> Scan History</h1>
+            <p>Review your previous security scans.</p>
+        </div>
+        {% if history %}
+        <button class="btn btn-danger" onclick="showClearConfirmation()" title="Clear all scan history">
+            <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
+            Clear All
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Clear History Confirmation Modal -->
+<div id="clearModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Clear All History?</h2>
+            <button class="modal-close" onclick="closeClearModal()">
+                <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>This action will permanently delete all {{ history|length }} scan records from your history.</p>
+            <p style="margin-top: 12px; color: var(--critical); font-weight: 600;">This cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeClearModal()">
+                <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                Cancel
+            </button>
+            <button class="btn btn-danger" onclick="confirmClearHistory()">
+                <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                Delete All Records
+            </button>
+        </div>
+    </div>
 </div>
 
 <div class="history-container">
@@ -24,13 +60,16 @@
                         {% endif %}
                     </div>
                     <div class="scan-meta">
-                        <span>🕐 {{ item.timestamp }}</span>
-                        <span>📍 {{ item.ip }}</span>
-                        <span class="ports-count">{{ item.ports_found }} Port{{ 's' if item.ports_found != 1 else '' }}</span>
+                        <span><i data-lucide="clock" class="icon-sm"></i> {{ item.timestamp }}</span>
+                        <span><i data-lucide="map-pin" class="icon-sm"></i> {{ item.ip }}</span>
+                        <span class="ports-count"><i data-lucide="network" class="icon-sm"></i> {{ item.ports_found }} Port{{ 's' if item.ports_found != 1 else '' }}</span>
                     </div>
                 </div>
                 <div class="scan-actions">
-                    <a href="/export/{{ item.id }}" class="btn btn-view">📄 Download Report</a>
+                    <a href="/export/{{ item.id }}" class="btn btn-view">
+                        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                        Download Report
+                    </a>
                 </div>
             </div>
         </div>
@@ -38,14 +77,35 @@
     </div>
     {% else %}
     <div class="empty-state">
+        <i data-lucide="inbox" class="empty-icon"></i>
         <h2>No scan history yet</h2>
         <p>Your scan results will appear here after you perform scans.</p>
-        <a href="{{ url_for('index') }}" style="margin-top: 20px; display: inline-block;">Start a new scan →</a>
+        <a href="{{ url_for('dashboard') }}" style="margin-top: 20px; display: inline-block;">Start a new scan →</a>
     </div>
     {% endif %}
 </div>
 
 <style>
+    .history-header {
+        margin-bottom: 32px;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .header-icon {
+        width: 32px;
+        height: 32px;
+        stroke-width: 1.5;
+        color: var(--accent);
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
     .history-container {
         width: 100%;
     }
@@ -107,6 +167,13 @@
         gap: 6px;
     }
 
+    .icon-sm {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+        flex-shrink: 0;
+    }
+
     .scan-actions {
         display: flex;
         gap: 10px;
@@ -121,7 +188,9 @@
         font-size: 0.9rem;
         transition: all 0.3s ease;
         text-decoration: none;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .btn-view {
@@ -134,6 +203,29 @@
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
 
+    .btn-danger {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--critical);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: rgba(156, 163, 175, 0.1);
+        color: var(--text-secondary);
+        border: 1px solid rgba(156, 163, 175, 0.3);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(156, 163, 175, 0.2);
+        border-color: rgba(156, 163, 175, 0.5);
+    }
+
     .empty-state {
         text-align: center;
         padding: 60px 20px;
@@ -142,6 +234,16 @@
         border-radius: 16px;
         border: 1px solid var(--border);
         animation: fadeIn 0.8s ease-out;
+    }
+
+    .empty-icon {
+        width: 64px;
+        height: 64px;
+        color: var(--text-secondary);
+        opacity: 0.5;
+        margin: 0 auto 16px;
+        display: block;
+        stroke-width: 1;
     }
 
     .empty-state h2 {
@@ -179,16 +281,85 @@
     }
 
     .ports-count {
-        font-size: 1.5rem;
-        font-weight: 800;
+        font-size: 1.1rem;
+        font-weight: 700;
         color: var(--accent);
-        background: linear-gradient(135deg, #ffffff 0%, #10b981 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    }
+
+    /* Modal Styles */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-content {
+        background: var(--bg-card);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .modal-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.3s ease;
+    }
+
+    .modal-close:hover {
+        color: var(--text-primary);
+    }
+
+    .modal-body {
+        padding: 24px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
     }
 
     @media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
         .scan-header {
             flex-direction: column;
             gap: 16px;
@@ -201,7 +372,76 @@
         .btn {
             flex: 1;
             text-align: center;
+            justify-content: center;
+        }
+
+        .scan-meta {
+            flex-direction: column;
+            gap: 8px;
         }
     }
 </style>
+
+<script>
+function showClearConfirmation() {
+    const modal = document.getElementById('clearModal');
+    modal.style.display = 'flex';
+}
+
+function closeClearModal() {
+    const modal = document.getElementById('clearModal');
+    modal.style.display = 'none';
+}
+
+function confirmClearHistory() {
+    const button = event.target.closest('.btn');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i>Clearing...';
+    button.disabled = true;
+
+    fetch('/clear-history', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Redirect to history page to refresh
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } else {
+            alert('Error: ' + data.message);
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to clear history');
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('clearModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Add spin animation for loader
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
 {% endblock %}

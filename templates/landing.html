@@ -96,7 +96,9 @@
         </div>
         <div class="features-grid">
             <div class="feature-item">
-                <div class="feature-icon">⚡</div>
+                <div class="feature-icon">
+                    <i data-lucide="zap" style="width: 32px; height: 32px;"></i>
+                </div>
                 <div class="feature-content">
                     <h3>Port Scanning</h3>
                     <p>Ultra-fast multi-threaded scanner with deep inspection capabilities for over 1000 common ports.
@@ -104,21 +106,27 @@
                 </div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🔍</div>
+                <div class="feature-icon">
+                    <i data-lucide="search" style="width: 32px; height: 32px;"></i>
+                </div>
                 <div class="feature-content">
                     <h3>Banner Grabbing</h3>
                     <p>Extract service headers and fingerprint technologies to identify potential attack vectors.</p>
                 </div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🤖</div>
+                <div class="feature-icon">
+                    <i data-lucide="brain" style="width: 32px; height: 32px;"></i>
+                </div>
                 <div class="feature-content">
                     <h3>AI Analysis</h3>
                     <p>Leverage intelligent scoring and remediation advice to stay ahead of evolving threats.</p>
                 </div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🌐</div>
+                <div class="feature-icon">
+                    <i data-lucide="globe" style="width: 32px; height: 32px;"></i>
+                </div>
                 <div class="feature-content">
                     <h3>Subdomain Finder</h3>
                     <p>Enumerate subdomains using DNS-based resolution to map out the entire attack surface.</p>
@@ -205,7 +213,7 @@
                 <div class="member-badge">Core</div>
                 <div class="member-avatar">MF</div>
                 <div class="member-info">
-                    <h3>Md Farhan</h3>
+                    <h3>Md Anas</h3>
                     <span class="role">Security Engineer</span>
                     <p>Specialist in vulnerability assessment and network protocol analysis.</p>
                     <div class="member-socials">
@@ -217,7 +225,7 @@
                 <div class="member-badge">Core</div>
                 <div class="member-avatar">US</div>
                 <div class="member-info">
-                    <h3>Uday Shankar Singh</h3>
+                    <h3>Shubham Yadav</h3>
                     <span class="role">Backend Developer</span>
                     <p>Expert in scalable Python backends and high-performance scanning engines.</p>
                     <div class="member-socials">
@@ -256,19 +264,67 @@
         </div>
     </footer>
 
+    <!-- Load Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+    
     <script>
-        document.getElementById('current-year').textContent = new Date().getFullYear();
+        console.log('Landing page script loading...');
+        
+        // Initialize page
+        function initializePage() {
+            console.log('initializePage called');
+            
+            try {
+                // Set current year
+                const yearElement = document.getElementById('current-year');
+                if (yearElement) {
+                    yearElement.textContent = new Date().getFullYear();
+                    console.log('Year set');
+                }
 
-        const menuToggle = document.querySelector('.menu-toggle');
-        const mobileMenu = document.querySelector('.mobile-menu');
+                // Initialize menu toggle
+                const menuToggle = document.querySelector('.menu-toggle');
+                const mobileMenu = document.querySelector('.mobile-menu');
+                console.log('Menu elements found:', { menuToggle: !!menuToggle, mobileMenu: !!mobileMenu });
 
-        function toggleMenu() {
-            menuToggle.classList.toggle('active');
-            mobileMenu.classList.toggle('active');
-            document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto';
+                if (menuToggle && mobileMenu) {
+                    window.toggleMenu = function() {
+                        menuToggle.classList.toggle('active');
+                        mobileMenu.classList.toggle('active');
+                        document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto';
+                    };
+                    menuToggle.addEventListener('click', window.toggleMenu);
+                    console.log('Menu toggle initialized');
+                }
+
+                // Initialize Lucide icons
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('Lucide icons initialized');
+                } else {
+                    console.warn('Lucide not loaded yet');
+                }
+                
+                console.log('Page initialization complete');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+            }
         }
 
-        menuToggle.addEventListener('click', toggleMenu);
+        // Run on DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+        
+        // Also make sure it runs after page fully loads
+        window.addEventListener('load', () => {
+            console.log('Page fully loaded');
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
     </script>
 </body>
 

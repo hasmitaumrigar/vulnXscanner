@@ -8,7 +8,8 @@ function initSocket() {
     socket.on('scan_log', (data) => addTerminalLine(data.message));
 
     socket.on('scan_progress', (data) => {
-        addTerminalLine(`[${data.current}/${data.total}] Scanning port ${data.port}...`);
+        const progress = data.progress_percent ? `[${data.progress_percent}%]` : '';
+        addTerminalLine(`[${data.current}/${data.total}] Scanning port ${data.port}... ${progress}`);
     });
 
     socket.on('port_found', (data) => {
@@ -48,7 +49,7 @@ function renderResults(results) {
     results.forEach(([port, service, banner, severity, threat]) => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.onclick = () => showDetailedAnalysis(port, service, banner, severity);
+        card.onclick = () => window.showDetailedAnalysis(port, service, banner, severity);
 
         card.innerHTML = `
             <span class="severity-badge ${severity}">${severity}</span>
@@ -59,7 +60,14 @@ function renderResults(results) {
                 <span class="remediation-label">Remediation Guide</span>
                 ${threat}
             </div>
-            <div class="ai-hint">🔍 Click for AI expert analysis</div>
+            <div class="ai-hint" role="button" tabindex="0">
+                <svg class="ai-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2l1.5 3.3L17 6l-3 2.2L14 11l-2-1.6L10 11l.9-2.8L8 6l3.5-.7L12 2z"></path>
+                    <path d="M5 12l.7 1.6L7.5 14l-1.8 1.1L5 16.5 4.3 15.1 3 14l1.3-1 1.7-.6z"></path>
+                    <path d="M20 12l.5 1.1L21.5 14l-1.3.8L20 16l-.5-1.2L18 14l1.5-1.8L20 12z"></path>
+                </svg>
+                <span>Click for AI expert analysis</span>
+            </div>
         `;
         grid.appendChild(card);
     });
@@ -101,4 +109,22 @@ function startScan(event) {
     socket.emit('start_scan', { target: target, deep_scan: deepScan });
 }
 
-document.addEventListener('DOMContentLoaded', initSocket);
+function toggleDeepScanWarning() {
+    const deepScanCheckbox = document.getElementById('deepScan');
+    const warningBox = document.getElementById('deepScanWarning');
+    
+    if (deepScanCheckbox.checked) {
+        warningBox.style.display = 'flex';
+    } else {
+        warningBox.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initSocket();
+    // Initialize warning visibility on page load
+    const deepScanCheckbox = document.getElementById('deepScan');
+    if (deepScanCheckbox && deepScanCheckbox.checked) {
+        toggleDeepScanWarning();
+    }
+});

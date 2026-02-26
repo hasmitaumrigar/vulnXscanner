@@ -403,7 +403,6 @@ body {
 }
 
 .feature-icon {
-    font-size: 2rem;
     width: 60px;
     height: 60px;
     display: flex;
@@ -412,6 +411,13 @@ body {
     background: rgba(16, 185, 129, 0.1);
     border-radius: 12px;
     flex-shrink: 0;
+}
+
+.feature-icon [data-lucide] {
+    width: 32px;
+    height: 32px;
+    stroke-width: 1.5;
+    color: var(--accent);
 }
 
 .feature-content h3 {

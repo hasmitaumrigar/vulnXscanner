@@ -120,16 +120,32 @@ def grab_banner(ip, port, address_family=None):
     except: return "No banner response"
 
 def scan_target(target_ip, deep_scan, callback=None):
-    """Scan target IP (IPv4 or IPv6) for open ports"""
+    """Scan target IP (IPv4 or IPv6) for open ports
+    
+    Args:
+        target_ip: IP address to scan (IPv4 or IPv6)
+        deep_scan: If True, scan 1-65535; else scan 1-1024
+        callback: Optional callback function for progress updates
+    """
     # Determine address family
     address_family = get_address_family(target_ip)
     if address_family is None:
         raise ValueError(f"Invalid IP address format: {target_ip}")
     
-    ports = list(range(1, 1025)) if deep_scan else common_ports
+    # Port range selection with performance tuning
+    if deep_scan:
+        ports = list(range(1, 65536))  # Full range: 1-65535
+        num_threads = 500  # More threads for larger port range
+        progress_step = 100  # Update every 100 ports to reduce overhead
+    else:
+        ports = list(range(1, 1025))  # Standard range: 1-1024
+        num_threads = 100  # Standard thread count
+        progress_step = 50  # Update every 50 ports
+    
     results = []
     q = queue.Queue()
-    for port in ports: q.put(port)
+    for port in ports:
+        q.put(port)
     
     total_ports = len(ports)
     scanned_count = 0
@@ -141,7 +157,9 @@ def scan_target(target_ip, deep_scan, callback=None):
             port = q.get()
             try:
                 sock = socket.socket(address_family, socket.SOCK_STREAM)
-                sock.settimeout(1)
+                # Shorter timeout for deep scans to avoid slowdown
+                timeout = 0.5 if deep_scan else 1
+                sock.settimeout(timeout)
                 if sock.connect_ex((target_ip, port)) == 0:
                     service = port_services.get(port, "Unknown")
                     banner = grab_banner(target_ip, port, address_family)
@@ -152,17 +170,24 @@ def scan_target(target_ip, deep_scan, callback=None):
                     if callback:
                         callback('port_found', {'port': port, 'service': service, 'banner': banner})
                 sock.close()
-            except: pass
+            except:
+                pass
             
             with lock:
                 scanned_count += 1
-                if callback and scanned_count % 10 == 0: # Update progress every 10 ports to reduce overhead
-                    callback('scan_progress', {'current': scanned_count, 'total': total_ports, 'port': port})
+                if callback and scanned_count % progress_step == 0:
+                    progress_pct = int((scanned_count / total_ports) * 100) if total_ports > 0 else 0
+                    callback('scan_progress', {
+                        'current': scanned_count,
+                        'total': total_ports,
+                        'port': port,
+                        'progress_percent': progress_pct
+                    })
             
             q.task_done()
 
     threads = []
-    for _ in range(100):
+    for _ in range(num_threads):
         t = threading.Thread(target=worker, daemon=True)
         t.start()
         threads.append(t)

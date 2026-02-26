@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnX Security Scanner - Complete Port Scanning Workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1f2937 100%);
+            color: #f3f4f6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #10b981;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #d1d5db;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .diagram-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: auto;
+            min-height: 600px;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: white;
+        }
+        
+        .info-section {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 6px;
+        }
+        
+        .info-section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #10b981;
+        }
+        
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stage-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .stage-card strong {
+            color: #10b981;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        table thead {
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #10b981;
+            border-bottom: 2px solid #10b981;
+        }
+        
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        table tr:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .stage-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 VulnX Security Scanner</h1>
+            <p>Complete Port Scanning Workflow Diagram</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" onclick="downloadSVG()">📥 Download as SVG</button>
+            <button class="btn btn-secondary" onclick="downloadPNG()">📥 Download as PNG</button>
+            <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copy Diagram Code</button>
+        </div>
+        
+        <div class="diagram-container">
+            <div class="mermaid">
+graph TD
+    A["👤 User Input<br/>Target IP/Hostname<br/>Scan Type Selection"] -->|Submit Form| B["🔌 WebSocket Event<br/>Browser emits<br/>start_scan"]
+    
+    B -->|Flask receives event| C["🔍 DNS Resolution<br/>Validate IP Format<br/>IPv4 vs IPv6 Detection"]
+    
+    C -->|Resolution Success| D{Address Type?}
+    C -->|Resolution Failed| Z["❌ Error<br/>Send failure message<br/>Abort scan"]
+    
+    D -->|IPv4 Detected| E["🔗 Socket Family<br/>AF_INET<br/>socket.AF_INET"]
+    D -->|IPv6 Detected| F["🔗 Socket Family<br/>AF_INET6<br/>socket.AF_INET6"]
+    
+    E --> G["📋 Port Queue Creation<br/>Select Port Range<br/>Quick: 23 ports<br/>Deep: 1-65535"]
+    F --> G
+    
+    G --> H["⚡ Thread Pool init<br/>Quick Scan: 100 threads<br/>Deep Scan: 500 threads"]
+    
+    H --> I["🔄 Multi-threaded Scan<br/>Worker threads pop ports<br/>socket.connect_ex<br/>Check port open"]
+    
+    I --> J{Port Open?}
+    
+    J -->|No| K["➡️ Continue<br/>Next port in queue"]
+    K --> I
+    
+    J -->|Yes| L["🎣 Banner Grab<br/>TCP connection<br/>Receive response<br/>HTTP header parse"]
+    
+    L --> M["🏷️ Service Identification<br/>Match port → service<br/>FTP, SSH, HTTP, etc"]
+    
+    M --> N["⚠️ Severity Mapping<br/>Critical/High/Medium/Low<br/>Threat assessment<br/>Remediation guide"]
+    
+    N --> O["📡 Real-time WebSocket Update<br/>Emit 'port_found'<br/>Browser renders card<br/>Progress bar update"]
+    
+    O --> P{More Ports?}
+    
+    P -->|Yes| I
+    P -->|No| Q["✅ Scan Complete<br/>Aggregate results<br/>Sort by port number"]
+    
+    Q --> R["💾 Save to History<br/>JSON persistence<br/>scan_history.json<br/>Max 50 scans"]
+    
+    R --> S["🎨 UI Rendering<br/>Display result cards<br/>Enable export/report<br/>Show summary"]
+    
+    S --> T["🏁 Ready for Next Action<br/>User can:<br/>- Click card for AI analysis<br/>- Export report<br/>- Start new scan"]
+    
+    Z --> W["🔴 User Notification<br/>Display error message<br/>Clear UI state"]
+    
+    style A fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    style B fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style C fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style D fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style E fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style F fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style G fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#fff
+    style H fill:#f97316,stroke:#c2410c,stroke-width:2px,color:#fff
+    style I fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff
+    style J fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style K fill:#94a3b8,stroke:#64748b,stroke-width:2px,color:#fff
+    style L fill:#14b8a6,stroke:#0d9488,stroke-width:2px,color:#fff
+    style M fill:#22c55e,stroke:#16a34a,stroke-width:2px,color:#fff
+    style N fill:#84cc16,stroke:#65a30d,stroke-width:2px,color:#fff
+    style O fill:#a78bfa,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style P fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style Q fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style R fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style S fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style T fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    style Z fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    style W fill:#f87171,stroke:#dc2626,stroke-width:2px,color:#fff
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h2>📊 Workflow Stages</h2>
+            <div class="stage-grid">
+                <div class="stage-card">
+                    <strong>🟢 Stage 1: Initiation</strong>
+                    User input form submission with target and scan type choice.
+                </div>
+                <div class="stage-card">
+                    <strong>🟣 Stage 2: Validation</strong>
+                    DNS resolution validates IP format and detects IPv4 vs IPv6 automatically.
+                </div>
+                <div class="stage-card">
+                    <strong>🟠 Stage 3: Setup</strong>
+                    Socket family selection and thread pool initialization based on scan type.
+                </div>
+                <div class="stage-card">
+                    <strong>🔵 Stage 4: Scanning</strong>
+                    Multi-threaded port checking using socket.connect_ex() for each port.
+                </div>
+                <div class="stage-card">
+                    <strong>🟤 Stage 5: Analysis</strong>
+                    Banner grabbing, service identification, and severity mapping.
+                </div>
+                <div class="stage-card">
+                    <strong>💜 Stage 6: Real-time Communication</strong>
+                    WebSocket updates delivering live progress to the browser UI.
+                </div>
+                <div class="stage-card">
+                    <strong>🔵 Stage 7: Persistence</strong>
+                    Results saved to JSON history with maximum 50 scans storage.
+                </div>
+                <div class="stage-card">
+                    <strong>🟢 Stage 8: Completion</strong>
+                    Ready for user actions: analysis, export, or new scan.
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h2>⚙️ Key Technologies</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Technology</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Frontend Communication</td>
+                        <td>WebSocket / Socket.IO</td>
+                        <td>Real-time event streaming</td>
+                    </tr>
+                    <tr>
+                        <td>Threading</td>
+                        <td>Python Threading</td>
+                        <td>100-500 concurrent port checks</td>
+                    </tr>
+                    <tr>
+                        <td>Network API</td>
+                        <td>Python Socket API</td>
+                        <td>IPv4/IPv6 TCP connections</td>
+                    </tr>
+                    <tr>
+                        <td>Storage</td>
+                        <td>JSON File</td>
+                        <td>Persistent scan history</td>
+                    </tr>
+                    <tr>
+                        <td>Server</td>
+                        <td>Flask + SocketIO</td>
+                        <td>Backend application server</td>
+                    </tr>
+                    <tr>
+                        <td>Frontend</td>
+                        <td>HTML/CSS/JavaScript</td>
+                        <td>User interface</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            <p><strong>VulnX Security Scanner</strong> | Generated February 26, 2026</p>
+            <p>Open this file in a modern browser to interact with the diagram and download.</p>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        
+        function downloadSVG() {
+            const svg = document.querySelector('.mermaid svg');
+            if (!svg) {
+                alert('Diagram is still rendering. Please wait and try again.');
+                return;
+            }
+            
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/svg+xml;base64,' + btoa(svgData));
+                link.download = 'VULNX_SCANNING_WORKFLOW.svg';
+                link.click();
+            };
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        }
+        
+        function downloadPNG() {
+            const svg = document.querySelector('.mermaid svg');
+            if (!svg) {
+                alert('Diagram is still rendering. Please wait and try again.');
+                return;
+            }
+            
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'VULNX_SCANNING_WORKFLOW.png';
+                link.click();
+            };
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        }
+        
+        function copyToClipboard() {
+            const code = `graph TD
+    A["👤 User Input<br/>Target IP/Hostname<br/>Scan Type Selection"] -->|Submit Form| B["🔌 WebSocket Event<br/>Browser emits<br/>start_scan"]
+    
+    B -->|Flask receives event| C["🔍 DNS Resolution<br/>Validate IP Format<br/>IPv4 vs IPv6 Detection"]
+    
+    C -->|Resolution Success| D{Address Type?}
+    C -->|Resolution Failed| Z["❌ Error<br/>Send failure message<br/>Abort scan"]
+    
+    D -->|IPv4 Detected| E["🔗 Socket Family<br/>AF_INET<br/>socket.AF_INET"]
+    D -->|IPv6 Detected| F["🔗 Socket Family<br/>AF_INET6<br/>socket.AF_INET6"]
+    
+    E --> G["📋 Port Queue Creation<br/>Select Port Range<br/>Quick: 23 ports<br/>Deep: 1-65535"]
+    F --> G
+    
+    G --> H["⚡ Thread Pool init<br/>Quick Scan: 100 threads<br/>Deep Scan: 500 threads"]
+    
+    H --> I["🔄 Multi-threaded Scan<br/>Worker threads pop ports<br/>socket.connect_ex<br/>Check port open"]
+    
+    I --> J{Port Open?}
+    
+    J -->|No| K["➡️ Continue<br/>Next port in queue"]
+    K --> I
+    
+    J -->|Yes| L["🎣 Banner Grab<br/>TCP connection<br/>Receive response<br/>HTTP header parse"]
+    
+    L --> M["🏷️ Service Identification<br/>Match port → service<br/>FTP, SSH, HTTP, etc"]
+    
+    M --> N["⚠️ Severity Mapping<br/>Critical/High/Medium/Low<br/>Threat assessment<br/>Remediation guide"]
+    
+    N --> O["📡 Real-time WebSocket Update<br/>Emit 'port_found'<br/>Browser renders card<br/>Progress bar update"]
+    
+    O --> P{More Ports?}
+    
+    P -->|Yes| I
+    P -->|No| Q["✅ Scan Complete<br/>Aggregate results<br/>Sort by port number"]
+    
+    Q --> R["💾 Save to History<br/>JSON persistence<br/>scan_history.json<br/>Max 50 scans"]
+    
+    R --> S["🎨 UI Rendering<br/>Display result cards<br/>Enable export/report<br/>Show summary"]
+    
+    S --> T["🏁 Ready for Next Action<br/>User can:<br/>- Click card for AI analysis<br/>- Export report<br/>- Start new scan"]
+    
+    Z --> W["🔴 User Notification<br/>Display error message<br/>Clear UI state"]
+    
+    style A fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    style B fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style C fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style D fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style E fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style F fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style G fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#fff
+    style H fill:#f97316,stroke:#c2410c,stroke-width:2px,color:#fff
+    style I fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff
+    style J fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style K fill:#94a3b8,stroke:#64748b,stroke-width:2px,color:#fff
+    style L fill:#14b8a6,stroke:#0d9488,stroke-width:2px,color:#fff
+    style M fill:#22c55e,stroke:#16a34a,stroke-width:2px,color:#fff
+    style N fill:#84cc16,stroke:#65a30d,stroke-width:2px,color:#fff
+    style O fill:#a78bfa,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style P fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style Q fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style R fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style S fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style T fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    style Z fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    style W fill:#f87171,stroke:#dc2626,stroke-width:2px,color:#fff`;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Diagram code copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -61,8 +61,17 @@
 }
 
 .info-icon {
-    font-size: 2rem;
     margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-icon [data-lucide] {
+    width: 32px;
+    height: 32px;
+    stroke-width: 1.5;
+    color: var(--accent);
 }
 
 .info-card h3 {
@@ -216,7 +225,23 @@
 }
 
 .alert-icon {
-    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.alert-icon [data-lucide] {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+}
+
+.alert-success .alert-icon [data-lucide] {
+    color: #4ade80;
+}
+
+.alert-error .alert-icon [data-lucide] {
+    color: #f87171;
 }
 
 .alert-success {

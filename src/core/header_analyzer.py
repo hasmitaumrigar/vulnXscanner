@@ -34,7 +34,7 @@ class HeaderAnalyzer:
                 results.append({
                     "header": header,
                     "description": desc,
-                    "status": "✅ Found" if found else "❌ Missing",
+                    "status": "Found" if found else "Missing",
                     "safe": found
                 })
             

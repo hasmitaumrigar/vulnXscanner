@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnX | Advanced Security Scanner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #030712;
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 3rem; margin: 20px 0; }
+        p { font-size: 1.1rem; color: #94a3b8; margin: 15px 0; line-height: 1.6; }
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px;
+            background: #10b981;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+        .btn:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="section">
+        <div class="container">
+            <h1>🛡️ VulnX Security Scanner</h1>
+            <p>High-performance vulnerability scanning, real-time port analysis, and AI-driven threat intelligence.</p>
+            <p>Built for modern security professionals.</p>
+            <a href="/dashboard" class="btn">Launch Scanner</a>
+            <a href="https://github.com" class="btn">View on GitHub</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h1>About VulnX</h1>
+            <p>VulnX is an advanced security reconnaissance tool designed to provide deep insights into your network security posture.</p>
+            <p>From port discovery to AI-driven vulnerability assessments, we empower security teams to stay ahead of potential threats.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h1>Key Features</h1>
+            <p>✓ Ultra-fast multi-threaded port scanning<br/>
+               ✓ Banner grabbing & service fingerprinting<br/>
+               ✓ AI-powered vulnerability analysis<br/>
+               ✓ Subdomain enumeration<br/>
+               ✓ OSINT reconnaissance<br/>
+               ✓ Real-time progress updates</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h1>Get Started</h1>
+            <p>Start scanning for vulnerabilities in minutes.<br/>No registration required.</p>
+            <a href="/dashboard" class="btn" style="font-size: 1.1rem; padding: 14px 28px;">Launch Scanner Now</a>
+        </div>
+    </div>
+
+    <footer style="padding: 40px 20px; text-align: center;border-top: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+        <p>© <span id="year"></span> VulnX Security Engine • Enterprise Version 2.0</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        console.log('✅ Minimal landing page loaded');
+    </script>
+</body>
+</html>

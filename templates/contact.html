@@ -64,24 +64,32 @@
             <!-- Contact Info Cards -->
             <div class="contact-info">
                 <div class="info-card">
-                    <div class="info-icon">📧</div>
+                    <div class="info-icon">
+                        <i data-lucide="mail" style="width: 32px; height: 32px;"></i>
+                    </div>
                     <h3>Email Us</h3>
                     <p>For general inquiries and support</p>
 
                 </div>
                 <div class="info-card">
-                    <div class="info-icon">🔒</div>
+                    <div class="info-icon">
+                        <i data-lucide="lock" style="width: 32px; height: 32px;"></i>
+                    </div>
                     <h3>Security Reports</h3>
                     <p>Report vulnerabilities responsibly</p>
 
                 </div>
                 <div class="info-card">
-                    <div class="info-icon">💬</div>
+                    <div class="info-icon">
+                        <i data-lucide="message-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
                     <h3>Community</h3>
                     <p>Join our community</p>
                 </div>
                 <div class="info-card">
-                    <div class="info-icon">🐙</div>
+                    <div class="info-icon">
+                        <i data-lucide="github" style="width: 32px; height: 32px;"></i>
+                    </div>
                     <h3>Open Source</h3>
                     <p>Contribute on GitHub</p>
                     <a href="https://github.com/shubhushubhu99/vulnXscanner" class="info-link" target="_blank">View
@@ -98,14 +106,14 @@
 
                 {% if success %}
                 <div class="alert alert-success">
-                    <span class="alert-icon">✅</span>
+                    <i data-lucide="check-circle" class="alert-icon"></i>
                     {{ success }}
                 </div>
                 {% endif %}
 
                 {% if error %}
                 <div class="alert alert-error">
-                    <span class="alert-icon">❌</span>
+                    <i data-lucide="x-circle" class="alert-icon"></i>
                     {{ error }}
                 </div>
                 {% endif %}
