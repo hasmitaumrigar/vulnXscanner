@@ -57,7 +57,7 @@ class DirectoryResult:
 class DirectoryScanner:
     """Directory/path brute-force scanner"""
 
-    def __init__(self, target: str, deep_scan: bool = False, progress_callback=None):
+    def __init__(self, target: str, deep_scan: bool = False, progress_callback=None, max_workers: int = None):
         """
         Initialize the scanner.
 
@@ -65,13 +65,18 @@ class DirectoryScanner:
             target: Target URL (with or without scheme)
             deep_scan: Enable deep scan mode (more extensions, bigger wordlist)
             progress_callback: Callback function for progress updates
+            max_workers: Custom number of worker threads (optional)
         """
         self.raw_target = target.strip().rstrip('/')
         self.target = self._normalize_url(self.raw_target)
         self.use_deep_scan = deep_scan
         self.progress_callback = progress_callback
         self.found_paths: Set[str] = set()
-        self.max_workers = 800 if self.use_deep_scan else 150
+        # Use custom max_workers if provided, otherwise use defaults
+        if max_workers is not None:
+            self.max_workers = max_workers
+        else:
+            self.max_workers = 800 if self.use_deep_scan else 150
         self.timeout = 8
         self.soft_404_signatures: List[str] = []
         self.soft_404_length: int = None
@@ -468,7 +473,7 @@ class DirectoryScanner:
 # ======================================================================
 
 def scan_directories_blocking(target: str, deep_scan: bool = False,
-                              progress_callback=None) -> List[Dict]:
+                              progress_callback=None, max_workers: int = None) -> List[Dict]:
     """
     Blocking function to scan directories.
 
@@ -476,10 +481,11 @@ def scan_directories_blocking(target: str, deep_scan: bool = False,
         target: Target URL
         deep_scan: Enable deep scan mode
         progress_callback: Optional callback for progress updates
+        max_workers: Custom number of worker threads (optional)
 
     Returns:
         List of directory results
     """
     scanner = DirectoryScanner(target, deep_scan=deep_scan,
-                               progress_callback=progress_callback)
+                               progress_callback=progress_callback, max_workers=max_workers)
     return scanner.scan()

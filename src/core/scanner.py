@@ -119,13 +119,14 @@ def grab_banner(ip, port, address_family=None):
         return banner[:100] if banner else "No banner response"
     except: return "No banner response"
 
-def scan_target(target_ip, deep_scan, callback=None):
+def scan_target(target_ip, deep_scan, callback=None, custom_threads: int = None):
     """Scan target IP (IPv4 or IPv6) for open ports
     
     Args:
         target_ip: IP address to scan (IPv4 or IPv6)
         deep_scan: If True, scan 1-65535; else scan 1-1024
         callback: Optional callback function for progress updates
+        custom_threads: Optional custom number of threads (overrides defaults)
     """
     # Determine address family
     address_family = get_address_family(target_ip)
@@ -135,11 +136,11 @@ def scan_target(target_ip, deep_scan, callback=None):
     # Port range selection with performance tuning
     if deep_scan:
         ports = list(range(1, 65536))  # Full range: 1-65535
-        num_threads = 500  # More threads for larger port range
+        num_threads = custom_threads if custom_threads is not None else 500  # More threads for larger port range
         progress_step = 100  # Update every 100 ports to reduce overhead
     else:
         ports = list(range(1, 1025))  # Standard range: 1-1024
-        num_threads = 100  # Standard thread count
+        num_threads = custom_threads if custom_threads is not None else 100  # Standard thread count
         progress_step = 50  # Update every 50 ports
     
     results = []

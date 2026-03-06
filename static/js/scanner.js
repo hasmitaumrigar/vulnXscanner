@@ -98,11 +98,18 @@ function addTerminalLine(message) {
 }
 
 function startScan(event) {
-    if (event) event.preventDefault();
+    console.log('startScan called');
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
 
     const targetInput = document.getElementById('targetInput');
     const target = targetInput.value.trim();
-    if (!target) return;
+    if (!target) {
+        console.warn('No target provided');
+        return;
+    }
 
     const deepScan = document.getElementById('deepScan').checked;
     const btn = document.getElementById('analyzeBtn');
@@ -115,11 +122,20 @@ function startScan(event) {
     const terminal = document.getElementById('terminal');
     terminal.innerHTML = '<div style="color: var(--accent)">> Initializing socket connection...</div>';
 
+    // Ensure socket is initialized
     if (!socket || !socket.connected) {
+        console.log('Socket not connected, initializing...');
         initSocket();
+        // Give socket a moment to connect
+        setTimeout(() => {
+            socket.emit('start_scan', { target: target, deep_scan: deepScan });
+        }, 100);
+    } else {
+        console.log('Socket already connected, emitting scan');
+        socket.emit('start_scan', { target: target, deep_scan: deepScan });
     }
-
-    socket.emit('start_scan', { target: target, deep_scan: deepScan });
+    
+    return false;
 }
 
 function toggleDeepScanWarning() {
@@ -133,8 +149,13 @@ function toggleDeepScanWarning() {
     }
 }
 
+// Initialize socket when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    initSocket();
+    console.log('Dashboard loaded - initializing socket');
+    if (!socket) {
+        initSocket();
+    }
+    
     // Initialize warning visibility on page load
     const deepScanCheckbox = document.getElementById('deepScan');
     if (deepScanCheckbox && deepScanCheckbox.checked) {

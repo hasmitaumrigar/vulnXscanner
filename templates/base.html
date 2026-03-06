@@ -60,7 +60,10 @@
 
          <a href="/history" data-nav-link="history" class="nav-item {% if active_page == 'history' %}active{% endif %}">Scan History</a>
 
-        <a href="#" class="nav-item" style="margin-top: auto;">Settings</a>
+        <a href="{{ url_for('settings_page') }}" data-nav-link="settings" class="nav-item {% if active_page == 'settings' %}active{% endif %}" style="margin-top: auto;">
+            <i data-lucide="settings"></i>
+            <span>Settings</span>
+        </a>
     </div>
 
     <!-- Main Content -->
@@ -104,6 +107,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     {% block extra_js %}{% endblock %}

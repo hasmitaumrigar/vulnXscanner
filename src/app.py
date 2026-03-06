@@ -155,6 +155,10 @@ latest_results = {
 def landing():
     return render_template('landing.html')
 
+@app.route('/landing-v2', methods=['GET'])
+def landing_v2():
+    return render_template('landing_v2.html')
+
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     return render_template(
@@ -269,6 +273,35 @@ def database_vulnerability_page():
     message = ""
     
     return render_template('database_vulnerability.html', vulnerabilities=vulnerabilities, message=message, active_page='database-vulnerability')
+
+@app.route('/settings', methods=['GET'])
+def settings_page():
+    """Settings page for scanner configuration"""
+    return render_template('settings.html', active_page='settings')
+
+@app.route('/api/save-settings', methods=['POST'])
+def save_settings_api():
+    """API endpoint to save scanner settings to session"""
+    try:
+        settings = request.get_json()
+        # Store settings in session
+        from flask import session
+        session['scanner_settings'] = settings
+        return jsonify({'status': 'success', 'message': 'Settings saved'}), 200
+    except Exception as e:
+        logger.error(f"Error saving settings: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/get-settings', methods=['GET'])
+def get_settings_api():
+    """API endpoint to retrieve scanner settings from session"""
+    try:
+        from flask import session
+        settings = session.get('scanner_settings', {})
+        return jsonify(settings), 200
+    except Exception as e:
+        logger.error(f"Error retrieving settings: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
@@ -726,14 +759,27 @@ def handle_scan(data):
     target = data.get('target')
     deep_scan = data.get('deep_scan', False)
     
+    # Extract settings from session (available in this request context)
+    custom_threads = None
+    try:
+        settings = session.get('scanner_settings', {})
+        if settings:
+            port_settings = settings.get('portScanner', {})
+            if deep_scan:
+                custom_threads = port_settings.get('threadsExtended')
+            else:
+                custom_threads = port_settings.get('threadsDefault')
+    except:
+        custom_threads = None
+    
     # Run scan in a background task to avoid blocking the socket handler
-    socketio.start_background_task(run_scan_task, target, deep_scan)
+    socketio.start_background_task(run_scan_task, target, deep_scan, custom_threads)
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
 
-def run_scan_task(target, deep_scan):
+def run_scan_task(target, deep_scan, custom_threads=None):
     print(f"Starting background scan for: {target}")
     
     if deep_scan:
@@ -755,14 +801,15 @@ def run_scan_task(target, deep_scan):
         return
 
     socketio.emit('scan_log', {'message': f"Target resolved to {ip}. Initializing scanning engine..."})
-    socketio.emit('scan_log', {'message': f"Using {'500 threads' if deep_scan else '100 threads'} for parallel scanning..."})
+    thread_count = custom_threads if custom_threads else (500 if deep_scan else 100)
+    socketio.emit('scan_log', {'message': f"Using {thread_count} threads for parallel scanning..."})
     socketio.emit('scan_log', {'message': ""})
     
     def scan_callback(event, data):
         socketio.emit(event, data)
 
     try:
-        scan_data = scan_target(ip, deep_scan, callback=scan_callback)
+        scan_data = scan_target(ip, deep_scan, callback=scan_callback, custom_threads=custom_threads)
         
         # Store results
         res_list = scan_data['ports']
@@ -801,10 +848,23 @@ def handle_subdomain_scan(data):
     domain = data.get('domain')
     deep_scan = data.get('deep_scan', False)
     
+    # Extract settings from session (available in this request context)
+    custom_threads = None
+    try:
+        settings = session.get('scanner_settings', {})
+        if settings:
+            subdomain_settings = settings.get('subdomainFinder', {})
+            if deep_scan:
+                custom_threads = subdomain_settings.get('threadsDeep')
+            else:
+                custom_threads = subdomain_settings.get('threadsNormal')
+    except:
+        custom_threads = None
+    
     # Run scan in a background task
-    socketio.start_background_task(run_subdomain_scan_task, domain, deep_scan)
+    socketio.start_background_task(run_subdomain_scan_task, domain, deep_scan, custom_threads)
 
-def run_subdomain_scan_task(domain, deep_scan):
+def run_subdomain_scan_task(domain, deep_scan, custom_threads=None):
     print(f"Starting background subdomain scan for: {domain}")
     
     try:
@@ -836,7 +896,7 @@ def run_subdomain_scan_task(domain, deep_scan):
                 logger.error(f"Error in progress callback: {e}")
         
         # Use the blocking function with custom callback for progress
-        results = scan_subdomains_blocking(domain, deep_scan=deep_scan, progress_callback=progress_callback)
+        results = scan_subdomains_blocking(domain, deep_scan=deep_scan, progress_callback=progress_callback, max_workers=custom_threads)
         
         # Emit completion progress
         socketio.emit('subdomain_progress', {
@@ -892,9 +952,22 @@ def handle_dir_scan(data):
     target = data.get('target')
     deep_scan = data.get('deep_scan', False)
 
-    socketio.start_background_task(run_dir_scan_task, target, deep_scan)
+    # Extract settings from session (available in this request context)
+    custom_threads = None
+    try:
+        settings = session.get('scanner_settings', {})
+        if settings:
+            directory_settings = settings.get('directoryFinder', {})
+            if deep_scan:
+                custom_threads = directory_settings.get('threadsDeep')
+            else:
+                custom_threads = directory_settings.get('threadsNormal')
+    except:
+        custom_threads = None
 
-def run_dir_scan_task(target, deep_scan):
+    socketio.start_background_task(run_dir_scan_task, target, deep_scan, custom_threads)
+
+def run_dir_scan_task(target, deep_scan, custom_threads=None):
     print(f"Starting background directory scan for: {target}")
 
     try:
@@ -924,7 +997,7 @@ def run_dir_scan_task(target, deep_scan):
             except Exception as e:
                 logger.error(f"Error in dir progress callback: {e}")
 
-        results = scan_directories_blocking(target, deep_scan=deep_scan, progress_callback=progress_callback)
+        results = scan_directories_blocking(target, deep_scan=deep_scan, progress_callback=progress_callback, max_workers=custom_threads)
 
         socketio.emit('dir_scan_progress', {
             'progress_percent': 100,
@@ -983,10 +1056,20 @@ def handle_db_scan(data):
         emit('db_scan_log', {'message': "[ERROR] No target specified"})
         return
     
+    # Extract settings from session (available in this request context)
+    custom_threads = None
+    try:
+        settings = session.get('scanner_settings', {})
+        if settings:
+            database_settings = settings.get('databaseScanner', {})
+            custom_threads = database_settings.get('threads')
+    except:
+        custom_threads = None
+    
     # Run scan in background task
-    socketio.start_background_task(run_db_scan_task, target, deep_scan)
+    socketio.start_background_task(run_db_scan_task, target, deep_scan, custom_threads)
 
-def run_db_scan_task(target, deep_scan):
+def run_db_scan_task(target, deep_scan, custom_threads=None):
     """Background task for database vulnerability scanning"""
     print(f"Starting background database vulnerability scan for: {target}")
     
@@ -1023,7 +1106,8 @@ def run_db_scan_task(target, deep_scan):
         results = scan_database_vulnerabilities_blocking(
             target, 
             deep_scan=deep_scan, 
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
+            max_workers=custom_threads
         )
         
         # Emit completion

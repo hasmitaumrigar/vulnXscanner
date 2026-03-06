@@ -239,6 +239,7 @@ const navigationRoutes = {
     'history': '/history',
     'database-vulnerability': '/database-vulnerability',
     'subdomain': '/subdomain',
+    'directory': '/directory',
     'analyzer': '/analyzer',
     'topology': '/topology',
     'osint': '/osint'
@@ -431,12 +432,9 @@ function reattachEventListeners() {
         console.log('Analyzer page loaded');
     }
     
-    // For scanner page
+    // For scanner page - socket initialization is handled by scanner.js
     if (document.getElementById('analyzeBtn')) {
-        console.log('Scanner page loaded');
-        if (typeof initSocket !== 'undefined') {
-            initSocket();
-        }
+        console.log('Scanner page loaded - scanner.js will handle socket init');
     }
     
     // For dashboard with results

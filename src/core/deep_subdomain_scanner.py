@@ -50,7 +50,7 @@ class SubdomainResult:
 class DeepSubdomainScanner:
     """Enhanced subdomain scanner with deep scan capabilities"""
     
-    def __init__(self, domain: str, deep_scan: bool = False, progress_callback=None):
+    def __init__(self, domain: str, deep_scan: bool = False, progress_callback=None, max_workers: int = None):
         """
         Initialize the scanner
         
@@ -58,6 +58,7 @@ class DeepSubdomainScanner:
             domain: Target domain
             deep_scan: Enable deep scan mode
             progress_callback: Callback function for progress updates (optional)
+            max_workers: Custom number of worker threads (optional)
         """
         self.domain = domain.strip().lower()
         self.use_deep_scan = deep_scan
@@ -65,7 +66,11 @@ class DeepSubdomainScanner:
         self.results: Set[SubdomainResult] = set()
         self.found_subdomains: Set[str] = set()
         self.wildcard_ip = None
-        self.max_workers = 800 if self.use_deep_scan else 200
+        # Use custom max_workers if provided, otherwise use defaults
+        if max_workers is not None:
+            self.max_workers = max_workers
+        else:
+            self.max_workers = 800 if self.use_deep_scan else 200
         self.timeout = 5
         
         # Get wordlist path
@@ -450,7 +455,7 @@ class DeepSubdomainScanner:
             return []
 
 
-def scan_subdomains_blocking(domain: str, deep_scan: bool = False, progress_callback=None) -> List[Dict]:
+def scan_subdomains_blocking(domain: str, deep_scan: bool = False, progress_callback=None, max_workers: int = None) -> List[Dict]:
     """
     Blocking function to scan subdomains
     
@@ -458,9 +463,10 @@ def scan_subdomains_blocking(domain: str, deep_scan: bool = False, progress_call
         domain: Target domain
         deep_scan: Enable deep scan mode
         progress_callback: Optional callback for progress updates
+        max_workers: Custom number of worker threads (optional)
         
     Returns:
         List of subdomain results
     """
-    scanner = DeepSubdomainScanner(domain, deep_scan=deep_scan, progress_callback=progress_callback)
+    scanner = DeepSubdomainScanner(domain, deep_scan=deep_scan, progress_callback=progress_callback, max_workers=max_workers)
     return scanner.scan()

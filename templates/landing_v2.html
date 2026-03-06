@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnX | Advanced Security Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+
+    <!-- ============================================================
+         How-It-Works Slider  –  Scoped CSS (does NOT touch other sections)
+         ============================================================ -->
+    <style>
+    /* ---------- Slider Container ---------- */
+    .hiw-slider-wrap {
+        position: relative;
+        max-width: 900px;
+        margin: 0 auto;
+        min-height: 480px;          /* fixed height – no layout shift */
+        user-select: none;
+    }
+
+    /* ---------- Slide ---------- */
+    .hiw-slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(60px) scale(0.97);
+        transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s 0.45s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 20px;
+        pointer-events: none;
+    }
+    .hiw-slide.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0) scale(1);
+        transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s 0s;
+        position: relative;         /* take space in flow */
+        pointer-events: auto;
+        z-index: 2;
+    }
+    .hiw-slide.exit-left {
+        opacity: 0;
+        transform: translateX(-60px) scale(0.97);
+        z-index: 1;
+    }
+    .hiw-slide.exit-right {
+        opacity: 0;
+        transform: translateX(60px) scale(0.97);
+        z-index: 1;
+    }
+
+    /* ---------- Slide Card ---------- */
+    .hiw-card {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 24px;
+        padding: 48px 44px;
+        text-align: left;
+        transition: border-color 0.3s;
+    }
+    .hiw-card:hover {
+        border-color: rgba(16,185,129,0.3);
+    }
+
+    /* slide number badge */
+    .hiw-card-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(16,185,129,0.1);
+        border: 1px solid rgba(16,185,129,0.25);
+        color: var(--primary);
+        padding: 6px 16px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 24px;
+    }
+    .hiw-card-badge .hiw-badge-icon {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2;
+    }
+
+    /* slide title */
+    .hiw-card h3 {
+        font-size: 1.65rem;
+        font-weight: 800;
+        margin-bottom: 16px;
+        color: var(--text-white);
+    }
+    .hiw-card h3 .gradient-text {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* slide description */
+    .hiw-card > p {
+        color: var(--text-gray);
+        font-size: 1.02rem;
+        line-height: 1.8;
+        margin-bottom: 28px;
+        letter-spacing: 0.01em;
+    }
+
+    /* bullet list */
+    .hiw-bullets {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .hiw-bullets li {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        color: var(--text-gray);
+        font-size: 0.96rem;
+        line-height: 1.65;
+        letter-spacing: 0.01em;
+    }
+    .hiw-bullets li .hiw-bullet-icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        color: var(--primary);
+        margin-top: 2px;
+        stroke-width: 2;
+    }
+    .hiw-bullets li strong {
+        color: var(--text-white);
+        font-weight: 700;
+    }
+
+    /* ---------- Arrow Buttons ---------- */
+    .hiw-arrows {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 36px;
+    }
+    .hiw-arrow {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(15,23,42,0.7);
+        backdrop-filter: blur(8px);
+        color: var(--text-white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .hiw-arrow:hover {
+        border-color: var(--primary);
+        background: rgba(16,185,129,0.1);
+        color: var(--primary);
+        transform: scale(1.08);
+    }
+    .hiw-arrow:active {
+        transform: scale(0.95);
+    }
+    .hiw-arrow svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+    }
+
+    /* ---------- Dot Indicators ---------- */
+    .hiw-dots {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 24px;
+    }
+    .hiw-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        border: none;
+        cursor: pointer;
+        transition: all 0.35s;
+        padding: 0;
+    }
+    .hiw-dot.active {
+        background: var(--primary);
+        box-shadow: 0 0 10px var(--primary-glow);
+        transform: scale(1.25);
+    }
+    .hiw-dot:hover:not(.active) {
+        background: rgba(255,255,255,0.25);
+    }
+
+    /* ---------- Slide Counter ---------- */
+    .hiw-counter {
+        text-align: center;
+        margin-top: 14px;
+        font-size: 0.8rem;
+        color: var(--text-gray);
+        font-weight: 500;
+        letter-spacing: 0.05em;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 768px) {
+        .hiw-slider-wrap {
+            min-height: 540px;
+        }
+        .hiw-card {
+            padding: 32px 24px;
+        }
+        .hiw-card h3 {
+            font-size: 1.35rem;
+        }
+        .hiw-arrow {
+            width: 42px;
+            height: 42px;
+        }
+    }
+    @media (max-width: 480px) {
+        .hiw-slider-wrap {
+            min-height: 600px;
+        }
+        .hiw-card {
+            padding: 28px 18px;
+        }
+        .hiw-card h3 {
+            font-size: 1.2rem;
+        }
+        .hiw-bullets li {
+            font-size: 0.88rem;
+        }
+    }
+    </style>
+</head>
+
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo"><span>◈</span> VulnX</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="#about">About</a>
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#team">Team</a>
+                <a href="{{ url_for('contact') }}">Contact Us</a>
+                <a href="/dashboard" class="nav-cta">Launch Scanner</a>
+            </div>
+            <button class="menu-toggle" aria-label="Toggle Menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu">
+        <div class="mobile-links">
+            <a href="/">Home</a>
+            <a href="#about" onclick="toggleMenu()">About</a>
+            <a href="#features" onclick="toggleMenu()">Features</a>
+            <a href="#how-it-works" onclick="toggleMenu()">How It Works</a>
+            <a href="#team" onclick="toggleMenu()">Team</a>
+            <a href="{{ url_for('contact') }}">Contact Us</a>
+            <a href="/dashboard" class="nav-cta">Launch Scanner</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-text">
+            <div class="hero-badge">🛡️ Enterprise-Grade Security</div>
+            <h1>Secure Your <span class="gradient-text">Digital Frontier</span></h1>
+            <p>High-performance vulnerability scanning, real-time port analysis, and AI-driven threat intelligence.
+                Built for modern security professionals.</p>
+            <div class="hero-cta">
+                <a href="/dashboard" class="btn btn-primary">
+                    <span>Get Started Free</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="https://github.com/shubhushubhu99/vulnXscanner" class="btn btn-outline">View on GitHub</a>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat"><strong>1000+</strong> Ports</div>
+                <div class="hero-stat"><strong>50+</strong> Vuln Checks</div>
+                <div class="hero-stat"><strong>99.9%</strong> Uptime</div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <img src="{{ url_for('static', filename='images/hero.png') }}" alt="VulnX Security Visual">
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section">
+        <div class="section-header">
+            <span class="section-tag">About VulnX</span>
+            <h2>Professional-Grade <span class="gradient-text">Security Scanning</span></h2>
+            <p>VulnX is an advanced security reconnaissance tool designed to provide deep insights into your network
+                security posture. From port discovery to AI-driven vulnerability assessments, we empower security teams
+                to stay ahead of potential threats.</p>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section">
+        <div class="section-header">
+            <span class="section-tag">Capabilities</span>
+            <h2>Powerful <span class="gradient-text">Features</span></h2>
+        </div>
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i data-lucide="zap" style="width: 32px; height: 32px;"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>Port Scanning</h3>
+                    <p>Ultra-fast multi-threaded scanner with deep inspection capabilities for over 1000 common ports.
+                    </p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i data-lucide="search" style="width: 32px; height: 32px;"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>Banner Grabbing</h3>
+                    <p>Extract service headers and fingerprint technologies to identify potential attack vectors.</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i data-lucide="brain" style="width: 32px; height: 32px;"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>AI Analysis</h3>
+                    <p>Leverage intelligent scoring and remediation advice to stay ahead of evolving threats.</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i data-lucide="globe" style="width: 32px; height: 32px;"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>Subdomain Finder</h3>
+                    <p>Enumerate subdomains using DNS-based resolution to map out the entire attack surface.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         HOW IT WORKS  –  8-Slide Interactive Carousel
+         ============================================================ -->
+    <section id="how-it-works" class="section">
+        <div class="section-header">
+            <span class="section-tag">Simple Process</span>
+            <h2>How It <span class="gradient-text">Works</span></h2>
+        </div>
+
+        <!-- Slider -->
+        <div class="hiw-slider-wrap" id="hiwSlider">
+
+            <!-- Slide 1 — Target Input System -->
+            <div class="hiw-slide active" data-slide="0">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="crosshair" class="hiw-badge-icon"></i>
+                        Step 01
+                    </div>
+                    <h3>Target <span class="gradient-text">Input System</span></h3>
+                    <p>Begin every scan by providing a target. VulnX validates and resolves the input before any packets are sent.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="terminal" class="hiw-bullet-icon"></i>Enter a domain name, subdomain, or IP address</li>
+                        <li><i data-lucide="link" class="hiw-bullet-icon"></i>Automatic URL normalization &amp; scheme detection</li>
+                        <li><i data-lucide="shield-check" class="hiw-bullet-icon"></i>Real-time input validation with error feedback</li>
+                        <li><i data-lucide="settings-2" class="hiw-bullet-icon"></i>Choose between Quick Scan or Deep Scan mode</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 2 — DNS Resolution & Subdomain Discovery -->
+            <div class="hiw-slide" data-slide="1">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="globe" class="hiw-badge-icon"></i>
+                        Step 02
+                    </div>
+                    <h3>DNS Resolution &amp; <span class="gradient-text">Subdomain Discovery</span></h3>
+                    <p>VulnX resolves DNS records and enumerates subdomains to map out the target's full attack surface.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="server" class="hiw-bullet-icon"></i>A, AAAA, CNAME, MX, NS, and TXT record lookup</li>
+                        <li><i data-lucide="list" class="hiw-bullet-icon"></i>Brute-force subdomain enumeration with 2 400+ word list</li>
+                        <li><i data-lucide="filter" class="hiw-bullet-icon"></i>Wildcard DNS detection to filter false positives</li>
+                        <li><i data-lucide="zap" class="hiw-bullet-icon"></i>800-thread parallel resolution for maximum speed</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 3 — Port Scanning -->
+            <div class="hiw-slide" data-slide="2">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="scan-line" class="hiw-badge-icon"></i>
+                        Step 03
+                    </div>
+                    <h3>Port Scanning – <span class="gradient-text">Normal &amp; Deep Mode</span></h3>
+                    <p>Identify every open port on the target with configurable scan depth. Normal mode checks the top 1 000 ports; Deep mode goes further.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="network" class="hiw-bullet-icon"></i>Multi-threaded TCP connect scanning</li>
+                        <li><i data-lucide="gauge" class="hiw-bullet-icon"></i>Normal scan: top 1 000 common service ports</li>
+                        <li><i data-lucide="radar" class="hiw-bullet-icon"></i>Deep scan: extended range with custom port lists</li>
+                        <li><i data-lucide="activity" class="hiw-bullet-icon"></i>Real-time WebSocket log streaming to your dashboard</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 4 — Service & Banner Detection -->
+            <div class="hiw-slide" data-slide="3">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="fingerprint" class="hiw-badge-icon"></i>
+                        Step 04
+                    </div>
+                    <h3>Service &amp; <span class="gradient-text">Banner Detection</span></h3>
+                    <p>Once a port is found open, VulnX fingerprints the service running behind it to map exact software versions.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="scan-line" class="hiw-bullet-icon"></i>TCP banner grabbing on every open port</li>
+                        <li><i data-lucide="tags" class="hiw-bullet-icon"></i>Service-name mapping (HTTP, SSH, FTP, MySQL, etc.)</li>
+                        <li><i data-lucide="code-2" class="hiw-bullet-icon"></i>Version extraction from response headers</li>
+                        <li><i data-lucide="layers" class="hiw-bullet-icon"></i>Technology stack identification for deeper analysis</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 5 — Multithreading & Performance Engine -->
+            <div class="hiw-slide" data-slide="4">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="cpu" class="hiw-badge-icon"></i>
+                        Step 05
+                    </div>
+                    <h3>Multithreading &amp; <span class="gradient-text">Performance Engine</span></h3>
+                    <p>Speed matters in security. VulnX runs every module on a high-concurrency thread pool so scans finish fast.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="cpu" class="hiw-bullet-icon"></i>Up to 800 concurrent workers in deep scan mode</li>
+                        <li><i data-lucide="git-branch" class="hiw-bullet-icon"></i>ThreadPoolExecutor for CPU-efficient parallelism</li>
+                        <li><i data-lucide="radio" class="hiw-bullet-icon"></i>Socket.IO real-time progress streaming</li>
+                        <li><i data-lucide="timer" class="hiw-bullet-icon"></i>Adaptive rate-limiting to avoid target overload</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 6 — Vulnerability Detection Modules -->
+            <div class="hiw-slide" data-slide="5">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="shield-alert" class="hiw-badge-icon"></i>
+                        Step 06
+                    </div>
+                    <h3>Vulnerability <span class="gradient-text">Detection Modules</span></h3>
+                    <p>A dedicated module library checks for the most critical web vulnerabilities automatically.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="database" class="hiw-bullet-icon"></i><strong>SQL Injection</strong> — error-based &amp; time-based detection</li>
+                        <li><i data-lucide="code" class="hiw-bullet-icon"></i><strong>XSS</strong> — reflected &amp; stored payload testing</li>
+                        <li><i data-lucide="folder-search" class="hiw-bullet-icon"></i><strong>Directory Bruteforce</strong> — 750+ path wordlist with soft-404 filtering</li>
+                        <li><i data-lucide="lock" class="hiw-bullet-icon"></i><strong>Admin Panel Detection</strong> — common admin endpoints</li>
+                        <li><i data-lucide="file-warning" class="hiw-bullet-icon"></i><strong>Exposed .env Files</strong> — leaked secrets &amp; credentials</li>
+                        <li><i data-lucide="shield" class="hiw-bullet-icon"></i><strong>Security Headers</strong> — CSP, HSTS, X-Frame checks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 7 — AI-Powered Analysis Engine -->
+            <div class="hiw-slide" data-slide="6">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="brain" class="hiw-badge-icon"></i>
+                        Step 07
+                    </div>
+                    <h3>AI-Powered <span class="gradient-text">Analysis Engine</span></h3>
+                    <p>After data collection, VulnX feeds results into a Gemini-powered AI engine for intelligent risk scoring and remediation.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="alert-triangle" class="hiw-bullet-icon"></i>Automated severity classification (Critical → Low)</li>
+                        <li><i data-lucide="wrench" class="hiw-bullet-icon"></i>Contextual remediation recommendations</li>
+                        <li><i data-lucide="bar-chart-3" class="hiw-bullet-icon"></i>CVSS-aligned risk scoring per finding</li>
+                        <li><i data-lucide="message-square" class="hiw-bullet-icon"></i>Natural-language summary for non-technical stakeholders</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Slide 8 — Report Generation & Download -->
+            <div class="hiw-slide" data-slide="7">
+                <div class="hiw-card">
+                    <div class="hiw-card-badge">
+                        <i data-lucide="file-down" class="hiw-badge-icon"></i>
+                        Step 08
+                    </div>
+                    <h3>Final Report <span class="gradient-text">Generation &amp; Download</span></h3>
+                    <p>Export a professional report containing every finding, recommendation, and metric — ready to share with your team.</p>
+                    <ul class="hiw-bullets">
+                        <li><i data-lucide="download" class="hiw-bullet-icon"></i>One-click PDF / JSON report download</li>
+                        <li><i data-lucide="history" class="hiw-bullet-icon"></i>Scan history stored for future comparison</li>
+                        <li><i data-lucide="eye" class="hiw-bullet-icon"></i>OSINT intelligence included in the report</li>
+                        <li><i data-lucide="share-2" class="hiw-bullet-icon"></i>Shareable dashboard link for collaborative review</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div><!-- /.hiw-slider-wrap -->
+
+        <!-- Arrow Navigation -->
+        <div class="hiw-arrows">
+            <button class="hiw-arrow" id="hiwPrev" aria-label="Previous slide">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="hiw-arrow" id="hiwNext" aria-label="Next slide">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+        </div>
+
+        <!-- Dot Indicators -->
+        <div class="hiw-dots" id="hiwDots"></div>
+
+        <!-- Counter -->
+        <div class="hiw-counter" id="hiwCounter">1 / 8</div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="section">
+        <div class="section-header">
+            <span class="section-tag">Under The Hood</span>
+            <h2>System <span class="gradient-text">Architecture</span></h2>
+            <p>Built with stability and performance in mind, VulnX utilizes a multi-threaded scanning engine powered by
+                Python and Flask, integrated with Socket.IO for real-time log streaming.</p>
+        </div>
+        <div class="arch-grid">
+            <div class="arch-item">
+                <h4>🐍 Python Backend</h4>
+                <p>High-performance scanning engine</p>
+            </div>
+            <div class="arch-item">
+                <h4>🌐 Flask Framework</h4>
+                <p>Lightweight and fast web server</p>
+            </div>
+            <div class="arch-item">
+                <h4>⚙️ Socket.IO</h4>
+                <p>Real-time bidirectional communication</p>
+            </div>
+            <div class="arch-item">
+                <h4>🧵 Multi-threading</h4>
+                <p>Parallel port scanning for speed</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="section">
+        <div class="section-header">
+            <span class="section-tag">The Creators</span>
+            <h2>Meet The <span class="gradient-text">Team</span></h2>
+        </div>
+        <div class="team-grid">
+            <div class="team-card">
+                <div class="member-badge">Lead</div>
+                <div class="member-avatar">SY</div>
+                <div class="member-info">
+                    <h3>Shubham Yadav</h3>
+                    <span class="role">Lead Developer & Maintainer</span>
+                    <p>Security Researcher and Full Stack Engineer focused on automated reconnaissance.</p>
+                    <div class="member-socials">
+                        <a href="https://github.com/shubhushubhu99" target="_blank">View GitHub</a>
+                    </div>
+                </div>
+            </div>
+            <div class="team-card">
+                <div class="member-badge">Core</div>
+                <div class="member-avatar">MF</div>
+                <div class="member-info">
+                    <h3>Md Anas</h3>
+                    <span class="role">Security Engineer</span>
+                    <p>Specialist in vulnerability assessment and network protocol analysis.</p>
+                    <div class="member-socials">
+                        <a href="#" target="_blank">View GitHub</a>
+                    </div>
+                </div>
+            </div>
+            <div class="team-card">
+                <div class="member-badge">Core</div>
+                <div class="member-avatar">US</div>
+                <div class="member-info">
+                    <h3>Shubham Yadav</h3>
+                    <span class="role">Backend Developer</span>
+                    <p>Expert in scalable Python backends and high-performance scanning engines.</p>
+                    <div class="member-socials">
+                        <a href="#" target="_blank">View GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section id="contact" class="section cta-section">
+        <h2>Ready to Secure Your Infrastructure?</h2>
+        <p>Start scanning for vulnerabilities in minutes. No registration required.</p>
+        <div class="hero-cta">
+            <a href="/dashboard" class="btn btn-primary btn-large">
+                <span>Launch Scanner Now</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </a>
+            <a href="https://github.com/shubhushubhu99/vulnXscanner" class="btn btn-outline">Star on GitHub ⭐</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo"><span>◈</span> VulnX</div>
+            <p>VulnX Security Engine • Enterprise Version 2.0 • © <span id="current-year"></span></p>
+            <div class="footer-links">
+                <a href="https://github.com/shubhushubhu99/vulnXscanner" target="_blank">GitHub</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="{{ url_for('contact') }}">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Load Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+
+    <script>
+        console.log('Landing v2 page script loading...');
+
+        // ============================================================
+        //  HIW Slider — Reusable slide engine (vanilla JS)
+        //  Exposed as window.HIWSlider so it can be reused / exported.
+        // ============================================================
+        class HIWSlider {
+            /**
+             * @param {string} wrapperId   – id of the .hiw-slider-wrap container
+             * @param {Object} opts
+             * @param {string} opts.dotsId     – id for dot container
+             * @param {string} opts.counterId  – id for counter element
+             * @param {string} opts.prevId     – id for prev button
+             * @param {string} opts.nextId     – id for next button
+             * @param {boolean} opts.autoplay  – auto-advance slides (default false)
+             * @param {number}  opts.interval  – ms between auto-advance (default 6000)
+             */
+            constructor(wrapperId, opts = {}) {
+                this.wrapper  = document.getElementById(wrapperId);
+                if (!this.wrapper) return;
+
+                this.slides   = Array.from(this.wrapper.querySelectorAll('.hiw-slide'));
+                this.total    = this.slides.length;
+                this.current  = 0;
+                this.animating = false;
+
+                // Controls
+                this.dotsEl    = opts.dotsId    ? document.getElementById(opts.dotsId)    : null;
+                this.counterEl = opts.counterId ? document.getElementById(opts.counterId) : null;
+                this.prevBtn   = opts.prevId    ? document.getElementById(opts.prevId)    : null;
+                this.nextBtn   = opts.nextId    ? document.getElementById(opts.nextId)    : null;
+
+                // Options
+                this.autoplay  = opts.autoplay  || false;
+                this.interval  = opts.interval  || 6000;
+                this._timer    = null;
+
+                this._buildDots();
+                this._bindEvents();
+                this._update();
+
+                if (this.autoplay) this._startAutoplay();
+            }
+
+            /* ---- navigation ---- */
+            goTo(index) {
+                if (this.animating || index === this.current || index < 0 || index >= this.total) return;
+                this.animating = true;
+
+                const direction = index > this.current ? 'exit-left' : 'exit-right';
+                const prev = this.slides[this.current];
+                const next = this.slides[index];
+
+                // Keep outgoing slide visible during exit transition
+                prev.classList.remove('active');
+                prev.classList.add(direction);
+
+                this.current = index;
+                next.classList.add('active');
+
+                // Clean up after transition completes
+                setTimeout(() => {
+                    prev.classList.remove(direction);
+                    this.animating = false;
+                }, 480);
+
+                this._update();
+                if (this.autoplay) this._resetAutoplay();
+            }
+
+            next() { this.goTo((this.current + 1) % this.total); }
+            prev() { this.goTo((this.current - 1 + this.total) % this.total); }
+
+            /* ---- internals ---- */
+            _update() {
+                // dots
+                if (this.dotsEl) {
+                    Array.from(this.dotsEl.children).forEach((dot, i) => {
+                        dot.classList.toggle('active', i === this.current);
+                    });
+                }
+                // counter
+                if (this.counterEl) {
+                    this.counterEl.textContent = `${this.current + 1} / ${this.total}`;
+                }
+            }
+
+            _buildDots() {
+                if (!this.dotsEl) return;
+                this.dotsEl.innerHTML = '';
+                for (let i = 0; i < this.total; i++) {
+                    const dot = document.createElement('button');
+                    dot.className = 'hiw-dot' + (i === 0 ? ' active' : '');
+                    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+                    dot.addEventListener('click', () => this.goTo(i));
+                    this.dotsEl.appendChild(dot);
+                }
+            }
+
+            _bindEvents() {
+                if (this.prevBtn) this.prevBtn.addEventListener('click', () => this.prev());
+                if (this.nextBtn) this.nextBtn.addEventListener('click', () => this.next());
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    // Only respond when slider is roughly in viewport
+                    const rect = this.wrapper.getBoundingClientRect();
+                    const inView = rect.top < window.innerHeight && rect.bottom > 0;
+                    if (!inView) return;
+                    if (e.key === 'ArrowLeft')  this.prev();
+                    if (e.key === 'ArrowRight') this.next();
+                });
+
+                // Touch / swipe support
+                let startX = 0;
+                this.wrapper.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                }, { passive: true });
+                this.wrapper.addEventListener('touchend', (e) => {
+                    const diff = startX - e.changedTouches[0].clientX;
+                    if (Math.abs(diff) > 50) {
+                        diff > 0 ? this.next() : this.prev();
+                    }
+                }, { passive: true });
+            }
+
+            _startAutoplay() {
+                this._timer = setInterval(() => this.next(), this.interval);
+            }
+            _resetAutoplay() {
+                clearInterval(this._timer);
+                this._startAutoplay();
+            }
+
+            /** Return slide data as an array of objects (useful for PPT export). */
+            exportSlides() {
+                return this.slides.map((slide, i) => {
+                    const card  = slide.querySelector('.hiw-card');
+                    const badge = card.querySelector('.hiw-card-badge')?.textContent.trim() || '';
+                    const title = card.querySelector('h3')?.textContent.trim() || '';
+                    const desc  = card.querySelector(':scope > p')?.textContent.trim() || '';
+                    const bullets = Array.from(card.querySelectorAll('.hiw-bullets li'))
+                                        .map(li => li.textContent.trim());
+                    return { index: i, badge, title, description: desc, bullets };
+                });
+            }
+        }
+
+        // Expose globally for reuse / PPT export
+        window.HIWSlider = HIWSlider;
+
+
+        // ============================================================
+        //  Page initialisation (same as original landing.html)
+        // ============================================================
+        function initializePage() {
+            console.log('initializePage called');
+
+            try {
+                // Set current year
+                const yearElement = document.getElementById('current-year');
+                if (yearElement) {
+                    yearElement.textContent = new Date().getFullYear();
+                }
+
+                // Initialize menu toggle
+                const menuToggle = document.querySelector('.menu-toggle');
+                const mobileMenu = document.querySelector('.mobile-menu');
+
+                if (menuToggle && mobileMenu) {
+                    window.toggleMenu = function() {
+                        menuToggle.classList.toggle('active');
+                        mobileMenu.classList.toggle('active');
+                        document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto';
+                    };
+                    menuToggle.addEventListener('click', window.toggleMenu);
+                }
+
+                // Initialize Lucide icons
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // Initialize How-It-Works slider
+                window.hiwSlider = new HIWSlider('hiwSlider', {
+                    dotsId:    'hiwDots',
+                    counterId: 'hiwCounter',
+                    prevId:    'hiwPrev',
+                    nextId:    'hiwNext',
+                    autoplay:  false
+                });
+
+                console.log('Page initialization complete');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+            }
+        }
+
+        // Run on DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+
+        // Also make sure it runs after page fully loads
+        window.addEventListener('load', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+
+</html>

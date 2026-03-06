@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - VulnX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <div class="settings-title-section">
+            <h1>Settings</h1>
+            <p class="settings-subtitle">Configure scanning parameters for optimal performance</p>
+        </div>
+        <button class="reset-btn" onclick="resetToDefaults()">
+            <i data-lucide="rotate-ccw"></i>
+            <span>Reset to Defaults</span>
+        </button>
+    </div>
+
+    <!-- Horizontal Navigation Tabs -->
+    <div class="settings-nav">
+        <nav class="settings-tabs">
+            <button class="tab-btn active" data-tab="port-scanner">
+                <i data-lucide="shield-alert"></i>
+                <span>Port Scanner</span>
+            </button>
+            <button class="tab-btn" data-tab="subdomain-finder">
+                <i data-lucide="globe"></i>
+                <span>Subdomain Finder</span>
+            </button>
+            <button class="tab-btn" data-tab="directory-finder">
+                <i data-lucide="folder-open"></i>
+                <span>Directory Finder</span>
+            </button>
+            <button class="tab-btn" data-tab="database-scanner">
+                <i data-lucide="database"></i>
+                <span>Database Vulnerability</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="settings-content">
+        <!-- Port Scanner Settings -->
+        <div class="tab-content active" id="port-scanner">
+            <div class="settings-card">
+                <div class="card-header">
+                    <h2>Port Scanner Configuration</h2>
+                    <p class="card-description">Adjust thread count for port scanning operations</p>
+                </div>
+                <div class="card-body">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="port-threads-default">Standard Port Range (1-1000)</label>
+                            <p class="setting-help">Number of parallel threads for scanning common ports</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="port-threads-default" min="1" max="500" value="100" class="slider">
+                            <div class="value-display">
+                                <span id="port-threads-default-value">100</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="port-threads-extended">Extended Port Range (1001-65535)</label>
+                            <p class="setting-help">Number of parallel threads for scanning extended port ranges</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="port-threads-extended" min="1" max="500" value="500" class="slider">
+                            <div class="value-display">
+                                <span id="port-threads-extended-value">500</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i data-lucide="info"></i>
+                        <span>Higher thread counts scan faster but consume more system resources</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subdomain Finder Settings -->
+        <div class="tab-content" id="subdomain-finder">
+            <div class="settings-card">
+                <div class="card-header">
+                    <h2>Subdomain Finder Configuration</h2>
+                    <p class="card-description">Configure threading for subdomain enumeration</p>
+                </div>
+                <div class="card-body">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="subdomain-threads-normal">Normal Scan</label>
+                            <p class="setting-help">Threads for standard subdomain scanning</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="subdomain-threads-normal" min="1" max="800" value="200" class="slider">
+                            <div class="value-display">
+                                <span id="subdomain-threads-normal-value">200</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="subdomain-threads-deep">Deep Scan</label>
+                            <p class="setting-help">Threads for comprehensive subdomain enumeration with more wordlists</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="subdomain-threads-deep" min="1" max="800" value="800" class="slider">
+                            <div class="value-display">
+                                <span id="subdomain-threads-deep-value">800</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i data-lucide="info"></i>
+                        <span>Deep scan uses more threads for comprehensive coverage</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Directory Finder Settings -->
+        <div class="tab-content" id="directory-finder">
+            <div class="settings-card">
+                <div class="card-header">
+                    <h2>Directory Finder Configuration</h2>
+                    <p class="card-description">Configure threading for directory brute-force scanning</p>
+                </div>
+                <div class="card-body">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="directory-threads-normal">Normal Scan</label>
+                            <p class="setting-help">Threads for standard directory scanning</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="directory-threads-normal" min="1" max="1000" value="150" class="slider">
+                            <div class="value-display">
+                                <span id="directory-threads-normal-value">150</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="directory-threads-deep">Deep Scan</label>
+                            <p class="setting-help">Threads for deep directory enumeration with extended wordlist</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="directory-threads-deep" min="1" max="1000" value="800" class="slider">
+                            <div class="value-display">
+                                <span id="directory-threads-deep-value">800</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i data-lucide="info"></i>
+                        <span>Adjust based on your target server capacity and network bandwidth</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Vulnerability Scanner Settings -->
+        <div class="tab-content" id="database-scanner">
+            <div class="settings-card">
+                <div class="card-header">
+                    <h2>Database Vulnerability Scanner Configuration</h2>
+                    <p class="card-description">Configure threading for database vulnerability checks</p>
+                </div>
+                <div class="card-body">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <label for="database-threads">Parallel Connection Threads</label>
+                            <p class="setting-help">Number of parallel threads for port and database checks</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="database-threads" min="1" max="50" value="6" class="slider">
+                            <div class="value-display">
+                                <span id="database-threads-value">6</span>
+                                <span class="unit">threads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i data-lucide="alert-circle"></i>
+                        <span>Lower values recommended to avoid overwhelming target databases and networks</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="settings-actions">
+        <button class="btn-secondary" onclick="loadSettings()">
+            <i data-lucide="undo-2"></i>
+            <span>Reload</span>
+        </button>
+        <button class="btn-primary" onclick="saveSettings()">
+            <i data-lucide="check"></i>
+            <span>Save Changes</span>
+        </button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+<script>
+    // Initialize settings on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        loadSettings();
+        initializeTabNavigation();
+        initializeSliders();
+    });
+</script>
+{% endblock %}
