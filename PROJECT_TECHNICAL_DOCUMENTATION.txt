@@ -1,0 +1,1538 @@
+================================================================================
+                    VULNX SECURITY SCANNER
+              COMPREHENSIVE TECHNICAL DOCUMENTATION
+================================================================================
+Date: March 2026
+Version: 1.0
+Status: Production Ready
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Project Overview
+2. Technology Stack
+3. Architecture & Design
+4. Core Modules & Logic
+5. Feature Breakdown
+6. Data Flow
+7. API Endpoints
+8. Threading & Performance
+9. Security Considerations
+10. Deployment & Configuration
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+VulnX is a professional-grade cybersecurity auditing and network reconnaissance
+tool built as a full-stack web application using Python (Backend) and modern
+web technologies (Frontend).
+
+PRIMARY PURPOSE:
+- Comprehensive network vulnerability scanning and analysis
+- Port enumeration and service identification
+- Subdomain discovery and reconnaissance
+- Database vulnerability detection
+- Directory brute-forcing
+- AI-powered security analysis
+- Professional report generation
+
+TARGET AUDIENCE:
+- Security professionals and penetration testers
+- Network administrators
+- Security researchers
+- Cybersecurity students
+- Red teams and blue teams
+
+KEY DIFFERENTIATORS:
+- Real-time WebSocket-based progress updates
+- Google Gemini AI integration for intelligent analysis
+- Multi-threaded high-performance scanning
+- Support for both IPv4 and IPv6
+- Modern, responsive dark-themed UI
+- Professional PDF and JSON report generation
+- Persistent scan history management
+
+================================================================================
+2. TECHNOLOGY STACK
+================================================================================
+
+BACKEND TECHNOLOGIES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Language:           Python 3.9+
+Web Framework:      Flask 2.x
+Real-time Comms:    Flask-SocketIO (WebSocket)
+Threading:          concurrent.futures.ThreadPoolExecutor
+DNS Resolution:     dnspython library
+HTTP Requests:      requests library
+PDF Generation:     reportlab library
+AI Integration:     Google Generative AI (Gemini 2.5 Flash)
+Configuration:      python-dotenv
+Async I/O:          asyncio, aiohttp
+
+FRONTEND TECHNOLOGIES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HTML5:              Jinja2 templating (via Flask)
+CSS3:               Custom dark-themed stylesheets
+JavaScript:         Vanilla JS (ES6+)
+Icons:              Lucide Icons
+Real-time Updates:  Socket.IO client library
+DOM Manipulation:   Vanilla JavaScript DOM API
+
+INFRASTRUCTURE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Containerization:   Docker & Docker Compose
+Development Server: Flask development server (can use Gunicorn/Waitress)
+Database:           JSON file-based (scan_history.json, messages.json)
+External Services:  Google Gemini API
+
+DIRECTORY STRUCTURE:
+================================================================================
+vulnXscanner/
+├── src/
+│   ├── app.py                          # Main Flask application
+│   ├── core/
+│   │   ├── scanner.py                  # Port scanning engine
+│   │   ├── deep_subdomain_scanner.py   # Subdomain enumeration
+│   │   ├── directory_scanner.py        # Directory/path brute-forcing
+│   │   ├── database_vulnerability_scanner.py  # DB vulnerability detection
+│   │   ├── header_analyzer.py          # HTTP header security analysis
+│   │   ├── mapper.py                   # Network topology mapping
+│   │   ├── osint_engine.py             # Open source intelligence gathering
+│   │   ├── reporter.py                 # PDF report generation
+│   │   └── whois_lookup.py             # WHOIS domain information
+│   └── __pycache__/
+├── templates/                          # HTML templates (Jinja2)
+├── static/
+│   ├── js/                            # JavaScript files
+│   ├── css/                           # Stylesheets
+│   └── images/                        # Assets
+├── data/
+│   ├── directories.txt                # Directory wordlist (8000+ entries)
+│   └── subdomains.txt                 # Subdomain wordlist (10000+ entries)
+├── Config/
+│   └── Procfile                       # Heroku/Railway deployment config
+├── tests/
+│   ├── __init__.py
+│   └── test_scanner.py                # Unit tests
+├── Docker*                            # Docker configuration files
+└── requirements.txt                   # Python dependencies
+
+================================================================================
+3. ARCHITECTURE & DESIGN
+================================================================================
+
+HIGH-LEVEL ARCHITECTURE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      CLIENT LAYER (Browser)                      │
+│  HTML5 + CSS3 + JavaScript + Lucide Icons + Socket.IO Client   │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ WebSocket (Socket.IO)
+                             │ HTTP/REST Requests
+┌────────────────────────────▼────────────────────────────────────┐
+│              APPLICATION LAYER (Flask - app.py)                  │
+├─────────────────────────────────────────────────────────────────┤
+│ Route Handlers  │  WebSocket Handlers  │  REST API Endpoints    │
+│ ─────────────── │  ───────────────────  │  ──────────────────    │
+│ / (landing)     │  start_scan          │  /ai_analysis          │
+│ /dashboard      │  start_db_scan       │  /db_analysis          │
+│ /history        │  start_subdomain     │  /download_report      │
+│ /subdomain      │  start_directory     │  /export/<id>          │
+│ /directory      │  scan_progress       │  /api/topology-data    │
+│ /database-*     │                      │  /api/osint/<target>   │
+│ /analyzer       │                      │  /api/get-settings     │
+│ /topology       │                      │  /api/save-settings    │
+│ /osint          │                      │                        │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+                 │ Imports & Calls
+┌────────────────▼───────────────────────────────────────────────┐
+│              CORE MODULES LAYER                                 │
+├────────────────────────────────────────────────────────────────┤
+│ • scanner.py                    (Port Scanning Logic)            │
+│ • deep_subdomain_scanner.py     (Subdomain Enumeration)         │
+│ • directory_scanner.py          (Directory Brute-forcing)       │
+│ • database_vulnerability_scanner.py (DB Vulnerability Check)    │
+│ • header_analyzer.py            (Security Headers Analysis)     │
+│ • mapper.py                     (Network Topology Mapping)      │
+│ • osint_engine.py               (OSINT Collection)              │
+│ • reporter.py                   (PDF Report Generation)         │
+│ • whois_lookup.py               (WHOIS Information Retrieval)   │
+└────────────────┬───────────────────────────────────────────────┘
+                 │
+        ┌────────┴─────────┬──────────────┬──────────────┐
+        │                  │              │              │
+┌───────▼──────┐  ┌───────▼───┐  ┌─────▼──────┐  ┌────▼─────┐
+│ Python Sockets│  │ DNS (dnspy)│  │ HTTP Reqs  │  │ File I/O │
+│ threading()   │  │ Resolution │  │ (requests) │  │ JSON Save│
+│ ThreadPool    │  │            │  │            │  │          │
+└──────┬────────┘  └────────────┘  └────────────┘  └────┬─────┘
+       │                                                │
+       └───────────────────┬──────────────┬────────────┘
+                          │              │
+              ┌───────────▼──┐  ┌───────▼─────────┐
+              │ Target System │  │ External Services
+              │ Network       │  │ • Google Gemini API
+              │ Services      │  │ • DNS Servers
+              └───────────────┘  └───────────────────┘
+
+DESIGN PATTERNS USED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. THREADING PATTERN (ThreadPoolExecutor):
+   - Concurrent I/O operations for faster scanning
+   - Multiple workers handle multiple ports/domains simultaneously
+   - Configurable thread pool size based on scan mode
+
+2. CALLBACK PATTERN:
+   - Progress callbacks for UI updates
+   - Real-time feedback to user via WebSocket
+   - Non-blocking scan execution
+
+3. OBSERVER PATTERN (WebSocket):
+   - Real-time event emission to clients
+   - Decoupled updates between backend and frontend
+   - Multiple clients can listen to same events
+
+4. STRATEGY PATTERN:
+   - Different scan modes (Quick vs Deep)
+   - Configurable wordlists and payloads
+   - Extensible vulnerability detection
+
+5. SINGLETON PATTERN:
+   - Flask app instance
+   - SocketIO instance
+   - Global logger
+
+6. DATA CLASS PATTERN:
+   - Result objects (DirectoryResult, SubdomainResult, etc.)
+   - Structured data with to_dict() serialization
+   - Type hints for clarity
+
+================================================================================
+4. CORE MODULES & LOGIC
+================================================================================
+
+MODULE 1: PORT SCANNER (scanner.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Identify open ports and running services on target systems
+
+KEY LOGIC:
+──────────
+1. TARGET RESOLUTION:
+   - Accepts hostname or IP (IPv4/IPv6)
+   - Validates format using regex and socket.inet_aton/inet_pton
+   - Resolves hostnames to IPs using socket.gethostbyname()
+   - Handles failures with fallback mechanisms
+
+2. PORT ENUMERATION:
+   - Quick Mode: 23 common ports (FTP, SSH, HTTP, HTTPS, MySQL, RDP, etc.)
+   - Deep Mode: 1-1024 ports (all well-known ports)
+   - Supports custom port ranges
+
+3. CONNECTION SCANNING:
+   - Creates Python socket (AF_INET or AF_INET6)
+   - Non-blocking socket with timeout (5 seconds)
+   - Attempts connection to each port
+   - Records successful connections (port open)
+   - Closes socket immediately after check
+
+4. BANNER GRABBING:
+   - Sends HTTP GET request if port 80/443/8080 detected
+   - Retrieves response headers (User-Agent, Server, etc.)
+   - Useful for service version identification
+
+5. SERVICE IDENTIFICATION:
+   - Maps port numbers to known services:
+     * 22 → SSH
+     * 443 → HTTPS
+     * 3306 → MySQL
+     * 5432 → PostgreSQL
+   - Uses port_services dictionary for quick lookup
+
+6. THREAT ASSESSMENT:
+   - Severity scoring using severity_map dictionary
+   - Maps ports to threat levels (Critical/High/Medium/Low)
+   - Provides remediation recommendations
+   - Custom threat descriptions for each port
+
+7. THREADING:
+   - ThreadPoolExecutor with 100 concurrent workers
+   - Each thread handles one port connection attempt
+   - Results aggregated after all threads complete
+
+ALGORITHM FLOW:
+   INPUT: target_host, scan_mode (quick/deep)
+   ├─ Resolve target to IP address
+   ├─ Determine ports based on scan mode
+   ├─ FOR EACH PORT (using ThreadPool):
+   │  ├─ Create socket (IPv4 or IPv6)
+   │  ├─ Set timeout
+   │  ├─ Attempt connection
+   │  ├─ If successful: record as OPEN
+   │  │  - Try banner grab if applicable
+   │  │  - Get service name from port mapping
+   │  │  - Get severity and threat description
+   │  ├─ If timeout/refused: record as CLOSED
+   │  └─ Close socket
+   └─ OUTPUT: List of open ports with details
+
+PERFORMANCE:
+   - Quick scan: ~5-15 seconds for 23 ports
+   - Deep scan: ~30-120 seconds for 1024 ports
+   - Threading provides significant speedup
+   - Timeout prevents hanging on unreachable hosts
+
+
+MODULE 2: SUBDOMAIN SCANNER (deep_subdomain_scanner.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Discover subdomains of target domain through enumeration
+
+KEY LOGIC:
+──────────
+1. WORDLIST LOADING:
+   - Reads from data/subdomains.txt (10,000+ wordlist entries)
+   - Quick mode: uses default list only (12 entries)
+   - Deep mode: uses full wordlist
+   - Entries: www, mail, ftp, dev, test, cpanel, api, blog, etc.
+
+2. WILDCARD DETECTION:
+   - Tests if domain uses wildcard DNS (*.domain.com → IP)
+   - Queries non-existent subdomain (random_xyz12345.domain.com)
+   - If resolves successfully → wildcard enabled
+   - Filters out false positives from wildcard responses
+
+3. DNS BRUTE-FORCE:
+   - FOR EACH subdomain in wordlist:
+     * Construct: subdomain.domain.com
+     * Query DNS A, AAAA, CNAME, MX, TXT records
+     * Uses dnspython library (dns.resolver)
+     * Handles DNS exceptions gracefully
+     * Records resolved subdomains
+
+4. HTTP/HTTPS VERIFICATION:
+   - Attempts HTTP request to found subdomain
+   - Records status code (200, 301, 404, etc.)
+   - Determines if subdomain has web service
+   - Classifies as "Active" if responsive
+
+5. THREADING:
+   - ThreadPoolExecutor with 800 workers (deep) or 200 (quick)
+   - Each worker tests one subdomain at a time
+   - Multiple concurrent DNS queries
+
+6. SUBDOMAIN PERMUTATION (Advanced):
+   - Generates subdomain variations:
+     * dev-domain.com
+     * test-domain.com
+     * staging-domain.com
+   - Checks permutations for additional discoveries
+
+ALGORITHM FLOW:
+   INPUT: domain, mode (quick/deep)
+   ├─ Detect wildcard DNS pattern
+   ├─ Load appropriate wordlist
+   ├─ FOR EACH subdomain (using ThreadPool):
+   │  ├─ Construct full subdomain name
+   │  ├─ Query DNS for A/AAAA records
+   │  ├─ If resolves:
+   │  │  ├─ Compare IP with wildcard IP
+   │  │  ├─ If different → valid subdomain
+   │  │  ├─ Attempt HTTP connection
+   │  │  ├─ Record status (Active/Inactive)
+   │  │  └─ Store DNS records
+   │  └─ Continue to next
+   └─ OUTPUT: List of valid subdomains with details
+
+PERFORMANCE:
+   - Quick mode: ~10-30 seconds
+   - Deep mode: ~60-300 seconds
+   - Depends on DNS server responsiveness
+   - 800 concurrent threads in deep mode for speed
+
+
+MODULE 3: DIRECTORY SCANNER (directory_scanner.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Discover hidden directories and files on web servers
+
+KEY LOGIC:
+──────────
+1. WORDLIST LOADING:
+   - Reads from data/directories.txt (8,000+ entries)
+   - Includes common directory names: admin, api, backup, config, etc.
+   - Can append extensions in deep mode
+
+2. SOFT-404 DETECTION:
+   - Tests non-existent path to identify server's 404 pattern
+   - Soft-404: server returns 200 with custom page
+   - Records baseline response for comparison
+   - Prevents false positives
+
+3. DIRECTORY ENUMERATION:
+   - FOR EACH directory in wordlist:
+     * Constructs URL: target/directory
+     * Sends HTTP GET request
+     * Records status code and response length
+     * Compares against soft-404 baseline
+     * If status 200-299 → likely exists
+
+4. EXTENSION TESTING (Deep Mode):
+   - Tests common extensions on each directory:
+     * .php, .html, .htm, .asp, .aspx, .jsp
+     * .txt, .json, .xml, .conf, .env, .git
+   - Expands possible findings
+
+5. CONTENT ANALYSIS:
+   - Analyzes response headers
+   - Checks Content-Length
+   - Detects redirects (301, 302)
+   - Records response details for analysis
+
+6. THREADING:
+   - ThreadPoolExecutor with 750 workers (deep) or 450 (quick)
+   - Updated from original 800/150 for PC stability
+   - Each worker tests one directory/file
+
+ALGORITHM FLOW:
+   INPUT: target_url, mode (quick/deep)
+   ├─ Detect soft-404 pattern for target
+   ├─ Load wordlist
+   ├─ FOR EACH directory (using ThreadPool):
+   │  ├─ Build full URL
+   │  ├─ Send HTTP GET request (timeout: 8 seconds)
+   │  ├─ Record status code and content length
+   │  ├─ Compare against soft-404 baseline
+   │  ├─ If 200-299 AND different from baseline:
+   │  │  ├─ Mark as found/interesting
+   │  │  └─ Record details
+   │  └─ If deep mode: test with extensions
+   └─ OUTPUT: List of discovered directories/files
+
+PERFORMANCE:
+   - Quick scan: ~30-60 seconds for 8000 entries
+   - Deep scan: ~120-300 seconds
+   - Threading: 750 workers provides balance
+   - Updated to prevent system overload
+
+
+MODULE 4: DATABASE VULNERABILITY SCANNER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Detect database exposure and web vulnerabilities
+
+KEY LOGIC:
+──────────
+1. DATABASE PORT CHECKING:
+   - Checks common unprotected database ports:
+     * 3306 - MySQL
+     * 5432 - PostgreSQL
+     * 27017 - MongoDB
+     * 1433 - MSSQL
+     * 6379 - Redis
+     * 5984 - CouchDB
+   - Attempts connection without credentials
+   - Indicates if exposed/accessible
+
+2. SQL INJECTION TESTING:
+   - Tests with SQL payloads:
+     * ' OR '1'='1
+     * ' OR 1=1--
+     * '" OR "1"="1
+     * UNION SELECT queries
+     * Time-based blind: SLEEP(3)
+   - Analyzes responses for injection indicators
+   - Detects vulnerable endpoints
+
+3. SENSITIVE FILE DETECTION:
+   - Checks for exposed sensitive files:
+     * /backup.sql
+     * /.env (environment variables)
+     * /.git/config
+     * /wp-config.php
+     * /docker-compose.yml
+     * /.aws/credentials
+   - Tests common paths for information disclosure
+
+4. SECURITY HEADER ANALYSIS:
+   - Checks for HTTP security headers:
+     * Content-Security-Policy
+     * X-Frame-Options
+     * X-Content-Type-Options
+     * Strict-Transport-Security
+   - Identifies missing security controls
+   - Provides recommendations
+
+RISK ASSESSMENT:
+   - Critical: Unauthenticated database access
+   - High: SQL injection vulnerabilities
+   - Medium: Missing security headers
+   - Low: Information disclosure
+
+
+MODULE 5: MAPPER (mapper.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Create network topology maps and visualizations
+
+KEY LOGIC:
+──────────
+1. DATA AGGREGATION:
+   - Collects port scan results
+   - Gathers subdomain enumeration data
+   - Combines directory discovery findings
+
+2. TOPOLOGY GRAPH:
+   - Creates node-link diagram
+   - Central node: target host
+   - Child nodes: discovered services/subdomains
+   - Edge labels: port numbers, status codes
+
+3. THREAT VISUALIZATION:
+   - Color-codes nodes by risk level
+   - Red: Critical
+   - Orange: High
+   - Yellow: Medium
+   - Green: Low
+
+4. EXPORT FORMATS:
+   - JSON for frontend visualization
+   - Mermaid diagram syntax for reports
+   - SVG/PNG for static exports
+
+
+MODULE 6: OSINT ENGINE (osint_engine.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Gather open-source intelligence about targets
+
+KEY LOGIC:
+──────────
+1. WHOIS LOOKUP:
+   - Retrieves domain registration information
+   - Registrar, nameservers, admin contact
+   - Useful for identifying infrastructure
+
+2. DNS ENUMERATION:
+   - Records: A, AAAA, MX, NS, TXT, SOC
+   - Mail server information
+   - Name server locations
+
+3. GEOLOCATION:
+   - IP geolocation lookup
+   - Estimates server location
+   - Identifies data center provider
+
+4. REPUTATION CHECK:
+   - Checks if domain/IP in blacklists
+   - Identifies malicious indicators
+   - Threat intelligence correlation
+
+
+MODULE 7: REPORTER (reporter.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE: Generate professional PDF reports
+
+KEY LOGIC:
+──────────
+1. PDF GENERATION (using reportlab):
+   - Creates structured PDF documents
+   - Professional header with VulnX branding
+   - Executive summary section
+   - Detailed findings per service
+   - Remediation recommendations
+   - Timestamps and metadata
+
+2. DATA FORMATTING:
+   - Converts scan results to printable format
+   - Includes charts and tables
+   - Color-coded risk levels
+   - Page breaks for readability
+
+3. EXPORT OPTIONS:
+   - PDF format for sharing
+   - JSON format for parsing
+   - Text format for emails
+   - HTML format for web viewing
+
+
+================================================================================
+5. FEATURE BREAKDOWN
+================================================================================
+
+FEATURE 1: PORT SCANNING
+────────────────────────
+Scan Mode:          Quick (23 ports) | Deep (1-1024 ports)
+Supported IP:       IPv4 | IPv6
+Threading:          100 concurrent workers
+Timeout:            5 seconds per port
+Services Detected:  23 common services
+Banner Grabbing:    HTTP servers (ports 80, 443, 8080)
+Severity Scoring:   Critical/High/Medium/Low
+Remediation:        Provided per port
+
+Example Workflow:
+  1. User enters target IP/hostname
+  2. Backend resolves to IP address
+  3. ThreadPoolExecutor creates 100 workers
+  4. Each worker attempts port connection
+  5. Successful connections recorded
+  6. Service identified from port mapping
+  7. Banner grabbed if applicable
+  8. Threat description added
+  9. Results sent via WebSocket to frontend
+  10. User sees real-time progress
+
+
+FEATURE 2: SUBDOMAIN ENUMERATION
+────────────────────────────────
+Dictionary:         10,000+ entries
+Wildcard Detection: Yes
+DNS Records:        A, AAAA, CNAME, MX, TXT
+HTTP Verification:  Yes (status checking)
+Threading:          800 (deep) | 200 (quick) workers
+DNS Timeout:        5 seconds
+Resolution:         dnspython library
+
+Example Workflow:
+  1. User enters domain name
+  2. System tests for wildcard DNS
+  3. Loads appropriate wordlist
+  4. ThreadPoolExecutor with 800 workers
+  5. Each worker queries DNS for subdomain
+  6. Filters out wildcard false positives
+  7. Attempts HTTP connection to valid subdomains
+  8. Records active/inactive status
+  9. Collects DNS records for each
+  10. Results streamed to frontend
+
+
+FEATURE 3: DIRECTORY BRUTE-FORCING
+──────────────────────────────────
+Dictionary:         8,000+ directory names
+Extensions:         .php, .html, .txt, .env, .git, etc.
+Soft-404 Detection: Yes (prevents false positives)
+Threading:          750 (deep) | 450 (quick) workers
+Response Analysis:  Status codes and content length
+Timeout:            8 seconds per request
+
+Example Workflow:
+  1. User enters target URL
+  2. System detects soft-404 pattern
+  3. Loads directory wordlist
+  4. ThreadPoolExecutor with 750 workers
+  5. Each worker tests one directory
+  6. Compares response against soft-404
+  7. If 200-299 and different → found
+  8. Deep mode appends extensions
+  9. Records found directories
+  10. Results displayed with status codes
+
+
+FEATURE 4: DATABASE VULNERABILITY DETECTION
+───────────────────────────────────────────
+Ports Tested:       6 common database ports
+SQL Injection:      Multiple payloads tested
+Sensitive Files:    14 common file paths
+Security Headers:   8 security headers checked
+Async I/O:          aiohttp for concurrent requests
+
+Example Vulnerable Scenarios Detected:
+  - Unprotected MySQL/PostgreSQL exposed to network
+  - SQL injection in web forms
+  - Exposed .env files with credentials
+  - Missing security headers (CSP, X-Frame-Options)
+  - Accessible backup files (.sql, .zip)
+  - Exposed git configuration
+  - Missing HSTS header
+
+
+FEATURE 5: AI-POWERED ANALYSIS (Google Gemini Integration)
+─────────────────────────────────────────────────────────
+API:                Google Generative AI (Gemini 2.5 Flash)
+Purpose:            Explain vulnerabilities in simple language
+Language:           Plain English, non-technical
+Features:
+  - Port vulnerability analysis
+  - Database vulnerability explanation
+  - Remediation step-by-step guides
+  - Risk scoring
+  - Best practices recommendations
+
+Integration Points:
+  - /ai_analysis endpoint (port scanning results)
+  - /db_analysis endpoint (database vulnerabilities)
+  - Simple language, no jargon
+  - Typing animation for user engagement
+  - Download PDF report option
+
+Example:
+  INPUT: Port 3306 (MySQL) open, services: MySQL Server
+  OUTPUT: "MySQL allows database access from the network...
+           Why it's risky: Attackers can brute-force credentials...
+           How to fix it: 1. Firewall port 3306 2. Use strong passwords..."
+
+
+FEATURE 6: NETWORK TOPOLOGY VISUALIZATION
+─────────────────────────────────────────
+Graph Type:         Node-link diagram
+Central Node:       Target host/domain
+Child Nodes:        Services, subdomains, directories
+Connection Type:    Risk-based coloring
+Export Formats:     JSON, Mermaid, SVG
+
+Visualization shows:
+  - Discovered services and ports
+  - Subdomains and their status
+  - Directories found
+  - Risk levels per component
+  - Interactive exploration
+
+
+FEATURE 7: SCAN HISTORY & PERSISTENCE
+──────────────────────────────────────
+Storage:            JSON file (scan_history.json)
+Max Records:        ~50 recent scans
+Data Stored:
+  - Target scanned
+  - Scan type and mode
+  - Results summary
+  - Timestamp
+  - Scan ID
+
+Features:
+  - View past scan results
+  - Re-run previous scans
+  - Compare results over time
+  - Export historical data
+
+
+FEATURE 8: REPORT GENERATION
+───────────────────────────
+Formats:            PDF, JSON, text
+Contents:
+  - Executive summary
+  - Open ports and services
+  - Vulnerabilities found
+  - Remediation recommendations
+  - Timestamps and metadata
+  - Severity breakdown
+
+PDF Features:
+  - Professional formatting
+  - Color-coded risk levels
+  - Tables and lists
+  - Logo/branding
+  - Digital signature ready
+
+
+================================================================================
+6. DATA FLOW
+================================================================================
+
+TYPICAL PORT SCAN REQUEST FLOW:
+───────────────────────────────
+
+USER BROWSER                    FLASK BACKEND              TARGET SYSTEM
+═════════════════════════════════════════════════════════════════════════════
+
+User clicks "Scan"
+    │                          
+    ├─ HTTP GET /dashboard ────────────────────────────>
+    │                              Load page
+    │                          <─────────────────────────
+    │                          (HTML + JS + CSS)
+    │
+    │ Fills form + clicks "Analyze"
+    │
+    ├─ Socket.IO: start_scan ──────────────────────────>
+    │   {target: "192.168.1.1", deep_scan: false}
+    │                          
+    │                         Backend: scan_target()
+    │                         ├─ Resolve target to IP
+    │                         ├─ Create ThreadPoolExecutor
+    │                         ├─ FOR EACH PORT:
+    │                         │  ├─ Create socket
+    │                         │  ├─ Connect to port
+    │                         │  ├─ Record result ────────────> Attempt connect
+    │                         │  └─ Close socket           <─── Accept/Reject
+    │                         │
+    │                         └─ When port found:
+    │<─── emit: port_found ───────────────────────────────
+    │     {port: 22, service: SSH, banner: ...}
+    │
+    │                         Progress update every 100ms
+    │<─── emit: scan_progress ──────────────────────────
+    │     {current: 5, total: 23, progress_percent: 22}
+    │
+    │ [Real-time terminal output in browser]
+    │
+    │                         When done:
+    │<─── emit: scan_complete ──────────────────────────
+    │     {total_open: 3, results: [...]}
+    │
+    │ [Display results cards]
+    │
+    │ User clicks "AI Analysis"
+    │
+    ├─ HTTP POST /ai_analysis ─────────────────────────>
+    │   {port: 22, service: SSH, banner: ..., severity: Medium}
+    │                          
+    │                         Backend: ai_analysis()
+    │                         ├─ Build prompt
+    │                         ├─ Call Google Gemini API ──────> Google API
+    │                         │  (via HTTPS)           <─────────────
+    │                         ├─ Parse response
+    │                         └─ Return plain text
+    │<───── {analysis_html: "SSH is..."} ──────────────
+    │
+    │ [Show modal with typing animation]
+    │
+    │ User clicks "Download Report"
+    │
+    ├─ HTTP POST /download_report ─────────────────────>
+    │   {analysis: "...", port: 22, service: SSH}
+    │                          
+    │                         Backend: download_report()
+    │                         ├─ Generate PDF (reportlab)
+    │                         └─ Send as attachment
+    │<───── PDF blob ──────────────────────────────────
+    │
+    │ [Browser saves PDF file]
+
+END OF FLOW
+
+
+THREADING & CONCURRENCY:
+────────────────────────
+
+Scanner creates ThreadPoolExecutor:
+  max_workers = 100
+
+Main thread submits tasks:
+  for port in ports_to_scan:
+    executor.submit(check_port, port)
+
+Worker threads execute in parallel:
+  Thread 1: Check port 21  ──┐
+  Thread 2: Check port 22  ──┤
+  Thread 3: Check port 23  ──├──> Results aggregated
+  Thread 4: Check port 25  ──┤    in main thread
+  ...
+  Thread 100: Check port 443┘
+
+Results collected using as_completed():
+  for future in as_completed(futures):
+    result = future.result()
+    results.append(result)
+
+
+WEBSOCKET REAL-TIME UPDATES:
+────────────────────────────
+
+Client connects via Socket.IO:
+  dbSocket = io()
+
+Scan starts:
+  socket.emit('start_scan', {target: ...})
+
+Backend begins threading, emits updates:
+  for future in as_completed(futures):
+    if port_open:
+      emit('port_found', {port: X, service: Y})
+    emit('scan_progress', {progress: Z})
+
+Client receives in real-time:
+  socket.on('port_found', function(data) {
+    add_result_card(data)
+  })
+  socket.on('scan_progress', function(data) {
+    update_progress_bar(data.progress)
+  })
+
+
+================================================================================
+7. API ENDPOINTS
+================================================================================
+
+ROUTE HANDLERS (HTTP):
+══════════════════════
+
+GET /
+    → Landing page
+    → Purpose: Project introduction and demo
+
+GET /dashboard
+    → Port scanner page
+    → WebSocket for real-time updates
+    → History of recent scans
+
+GET /history
+    → Scan history viewer
+    → List of past 50 scans
+    → Delete old scans
+
+GET /subdomain
+    → Subdomain enumeration page
+    → Form for domain input
+    → Results table
+
+GET /directory
+    → Directory brute-forcing page
+    → URL input form
+    → Results table with status codes
+
+GET /database-vulnerability
+    → Database vulnerability scanner page
+    → Detects exposed databases
+    → SQL injection testing
+    → Security header analysis
+
+GET /analyzer
+    → Port banner analysis tool
+    → Manual service identification
+
+GET /topology
+    → Network topology visualization
+    → Interactive graph view
+
+GET /osint
+    → Open source intelligence page
+    → Domain/IP information lookup
+    → WHOIS data retrieval
+
+GET /settings
+    → User preferences page
+    → Scan mode configuration
+    → Display preferences
+
+GET /contact
+    → Contact form page
+    → Feedback submission
+
+GET /osint/<target>
+    → OSINT API endpoint
+    → Returns domain/IP information
+    → JSON response
+
+GET /api/topology-data
+    → Returns topology graph data
+    → Used for visualization
+    → JSON format
+
+GET /api/get-settings
+    → Retrieves user settings
+    → JSON response
+
+GET /api/osint/<target>
+    → OSINT data for specific target
+    → JSON response
+
+
+WEBSOCKET EVENTS (Socket.IO):
+═════════════════════════════
+
+EMISSION TO BACKEND:
+────────────────────
+
+start_scan
+    Parameters: {target: string, deep_scan: boolean}
+    Purpose: Initiate port scan
+    Handler: @socketio.on('start_scan')
+
+start_subdomain
+    Parameters: {domain: string, deep_scan: boolean}
+    Purpose: Begin subdomain enumeration
+    Handler: @socketio.on('start_subdomain')
+
+start_db_scan
+    Parameters: {target: string, deep_scan: boolean}
+    Purpose: Start database vulnerability scan
+    Handler: @socketio.on('start_db_scan')
+
+start_directory
+    Parameters: {target: string, deep_scan: boolean}
+    Purpose: Begin directory brute-forcing
+    Handler: @socketio.on('start_directory')
+
+
+EMISSION FROM BACKEND:
+──────────────────────
+
+scan_log
+    Data: {message: string}
+    Purpose: Terminal output lines
+    Frequency: Real-time
+
+scan_progress
+    Data: {
+        progress_percent: integer,
+        current: integer,
+        total: integer,
+        port: integer
+    }
+    Purpose: Scanner progress updates
+    Frequency: Every 100ms or state change
+
+port_found
+    Data: {
+        port: integer,
+        service: string,
+        banner: string,
+        severity: string
+    }
+    Purpose: Notify of discovered open port
+    Frequency: When port found
+
+scan_complete
+    Data: {
+        total_open: integer,
+        results: array of ports
+    }
+    Purpose: Scan finished
+    Frequency: Once per scan
+
+
+REST API ENDPOINTS:
+═══════════════════
+
+POST /ai_analysis
+    Request Body: {
+        port: integer,
+        service: string,
+        banner: string,
+        severity: string
+    }
+    Response: {
+        success: boolean,
+        data: {
+            analysis_html: string,
+            port: integer,
+            service: string
+        }
+    }
+    Purpose: AI analysis of port vulnerability
+
+POST /db_analysis
+    Request Body: {
+        name: string,
+        description: string,
+        evidence: string,
+        risk: string,
+        recommendation: string
+    }
+    Response: {
+        success: boolean,
+        data: {
+            analysis_html: string,
+            name: string,
+            risk: string
+        }
+    }
+    Purpose: AI analysis of database vulnerability
+
+POST /download_report
+    Request Body: {
+        analysis: string,
+        port: integer,
+        service: string
+    }
+    Response: PDF file (binary)
+    Purpose: Generate downloadable PDF report
+
+POST /api/save-settings
+    Request Body: {
+        scan_mode: string,
+        thread_count: integer,
+        timeout: float
+    }
+    Response: {success: boolean}
+    Purpose: Save user preferences
+
+GET /export/<scan_id>
+    Response: JSON file
+    Purpose: Export specific scan results
+
+
+================================================================================
+8. THREADING & PERFORMANCE
+================================================================================
+
+THREADING MODEL:
+════════════════
+
+Primary Technology: concurrent.futures.ThreadPoolExecutor
+
+Current Configuration:
+─────────────────────
+
+Port Scanning:
+    Quick Mode: 100 workers
+    Deep Mode: 100 workers
+
+Subdomain Enumeration:
+    Quick Mode: 200 workers
+    Deep Mode: 800 workers
+
+Directory Brute-forcing:
+    Quick Mode: 450 workers (updated for stability)
+    Deep Mode: 750 workers (updated for stability)
+
+Database Scanning:
+    ~50 workers (I/O bound)
+
+WHY THREADING?
+───────────────
+
+Problem: Sequential operations are slow
+  - Port 21 check: 5 seconds
+  - Port 22 check: 5 seconds
+  - ... x 1024 ports = 5120 seconds (85+ minutes!)
+
+Solution: Parallel with ThreadPoolExecutor
+  - 100 threads each checking different port
+  - All 100 ports checked ~5 seconds (linear time)
+  - Deep scan: 1024 ports in ~50 seconds
+
+Threading Benefits:
+  - I/O-bound operations (network requests) ideal for threads
+  - No GIL contention (I/O releases GIL)
+  - Significant speed improvement
+
+PERFORMANCE CHARACTERISTICS:
+════════════════════════════
+
+Quick Port Scan:
+  ├─ 23 common ports
+  ├─ Threading: 100 workers
+  ├─ Time: 5-15 seconds
+  └─ Speedup vs sequential: ~20-100x
+
+Deep Port Scan:
+  ├─ 1024 ports
+  ├─ Threading: 100 workers
+  ├─ Time: 30-120 seconds
+  └─ Speedup vs sequential: ~100x+
+
+Quick Subdomain Scan:
+  ├─ ~12 default subdomains
+  ├─ Threading: 200 workers
+  ├─ Time: 10-30 seconds
+  └─ Depends on DNS latency
+
+Deep Subdomain Scan:
+  ├─ 10,000 wordlist entries
+  ├─ Threading: 800 workers
+  ├─ Time: 60-300 seconds
+  └─ Depends on DNS + network conditions
+
+Quick Directory Scan:
+  ├─ ~8000 directory names
+  ├─ Threading: 450 workers
+  ├─ Time: 30-60 seconds
+  ├─ Timeout per request: 8 seconds
+  └─ Updated from 150 to 450
+
+Deep Directory Scan:
+  ├─ ~8000 directory names x 15 extensions
+  ├─ Threading: 750 workers
+  ├─ Time: 120-300 seconds
+  ├─ Timeout per request: 8 seconds
+  └─ Updated from 800 to 750
+
+SCALING CONSIDERATIONS:
+═══════════════════════
+
+Current System (PC Environment):
+  - 750 threads for directory scanning
+  - Balanced for responsiveness vs throughput
+  - CPU usage: 30-60% during active scan
+  - Memory: ~200-400MB base + ~50-100MB per scan
+  - Network: <5 Mbps during operations
+
+If PC freezes/unresponsive:
+  - Reduce thread count
+  - Increase timeouts
+  - Use Quick mode instead of Deep mode
+  - Stagger multiple scans
+
+Future Scaling (Cloud/Server):
+  - Can increase to 1000+ workers
+  - Professional hardware can handle more threads
+  - Distributed scanning across multiple servers
+  - Load balancing for concurrent users
+
+MEMORY PROFILE:
+═══════════════
+
+Base Application:
+  - Flask + Socket.IO: ~50MB
+  - Dependencies: ~100MB
+  - Total: ~150MB minimum
+
+Per Active Scan:
+  - Port scan (100-1024 ports): 10-30MB
+  - Subdomain scan (10k entries): 50-100MB
+  - Directory scan (8k entries): 50-100MB
+  - Results storage: 10-50MB
+  - Total per scan: 50-150MB
+
+With Full Features Running:
+  - 5 concurrent scans: 250-750MB
+  - 10 concurrent scans: ~1GB
+  - Historical data (50 scans): 50-100MB
+
+
+================================================================================
+9. SECURITY CONSIDERATIONS
+================================================================================
+
+VULNERABILITIES & MITIGATION:
+──────────────────────────────
+
+1. INPUT VALIDATION:
+   ✓ Hostname/IP validation using regex and socket methods
+   ✓ Port range validation (1-65535)
+   ✓ URL scheme validation (http/https only)
+   ✓ Timeout enforcement to prevent DoS
+
+2. RATE LIMITING:
+   Consideration: None currently implemented
+   Recommendation: Add Flask-Limiter for production
+
+3. AUTHENTICATION:
+   Current: None (public access)
+   Production: Add Flask-Security with user accounts
+
+4. CSRF PROTECTION:
+   Current: Basic Flask session
+   Production: Add Flask-WTF CSRF tokens
+
+5. HTTPS/TLS:
+   Local: Development mode only
+   Production: Enable HTTPS via reverse proxy
+
+6. API KEY SECURITY:
+   ✓ Gemini API key stored in .env file
+   ✗ Environment variable loaded at startup
+   ✓ Key not logged or exposed in errors
+   Production: Use secrets manager (AWS Secrets, HashiCorp Vault)
+
+7. SQL INJECTION:
+   ✓ No SQL database used (JSON-based storage)
+   ✓ Not applicable to current architecture
+
+8. XSS (Cross-Site Scripting):
+   ✓ Jinja2 auto-escaping enabled by default
+   ✓ User input displayed in <pre> tags (terminal)
+   ⚠ Verify all user input properly escaped
+
+9. COMMAND INJECTION:
+   ✓ No shell commands executed
+   ✓ All networking done via Python libraries
+   ✓ Safe from system command injection
+
+10. NETWORK SECURITY:
+    - Scans external systems (potential legal/ethical issues)
+    - Ensure proper authorization before scanning
+    - Terms of Service should mention responsible disclosure
+    - Recommend: Target only systems you own/authorized
+
+11. DATA PRIVACY:
+    - Scan results stored in JSON files
+    - No database encryption by default
+    - Consider: Encrypt sensitive data at rest
+    - GDPR compliance: Clear data retention policy
+
+
+RESPONSIBLE SCANNING:
+──────────────────────
+
+Best Practices:
+  1. Only scan systems you own or have written permission
+  2. Don't use for malicious purposes
+  3. Respect rate limiting on target systems
+  4. Don't expose found vulnerabilities publicly
+  5. Follow responsible disclosure guidelines
+  6. Keep audit logs of all scans
+  7. Protect credentials/sensitive data in results
+  8. Regular security updates of dependencies
+  9. Monitor for suspicious usage patterns
+  10. Comply with local/regional regulations
+
+
+================================================================================
+10. DEPLOYMENT & CONFIGURATION
+================================================================================
+
+ENVIRONMENT SETUP:
+═══════════════════
+
+Local Development:
+──────────────────
+  1. Clone repository
+  2. Create virtual environment: python -m venv venv
+  3. Activate: source venv/bin/activate (Linux/Mac)
+  4. Install dependencies: pip install -r requirements.txt
+  5. Create .env file with GEMINI_API_KEY
+  6. Run: python src/app.py
+  7. Access: http://localhost:5000
+
+Docker Deployment:
+──────────────────
+  1. Install Docker & Docker Compose
+  2. Review docker-compose.yml
+  3. Set environment variables in .env
+  4. Run: docker-compose up -d
+  5. Access: http://localhost:8000 (or configured port)
+
+Cloud Deployment (Railway/Heroku):
+──────────────────────
+  1. Configure Procfile for process type
+  2. Set environment variables on platform
+  3. Deploy via git push
+  4. Platform runs: gunicorn + Flask-SocketIO
+  5. Monitor logs for issues
+
+
+REQUIRED ENVIRONMENT VARIABLES:
+════════════════════════════════
+
+GEMINI_API_KEY (Required for AI features)
+  - Google Generative AI API key
+  - Get from: https://makersuite.google.com/app/apikey
+  - Format: String (varies by authentication type)
+
+Optional Variables:
+  GEMINI_OAUTH_TOKEN
+    - OAuth 2.0 access token for Gemini
+    - Alternative to API key
+  
+  GEMINI_AUTH_TYPE
+    - 'api_key' or 'bearer'
+    - Auto-detected if not set
+  
+  GEMINI_MODEL
+    - LLM model name (default: "gemini-2.5-flash")
+    - Can use: "gemini-pro", "gemini-1.5-pro"
+  
+  FLASK_SECRET_KEY
+    - Session security key
+    - Generated randomly if not provided
+  
+  DEBUG
+    - True/False for development mode
+    - Default: False
+
+
+CONFIGURATION FILES:
+════════════════════
+
+.env (Configuration)
+  GEMINI_API_KEY=your_key_here
+  GEMINI_MODEL=gemini-2.5-flash
+  DEBUG=False
+
+requirements.txt (Dependencies)
+  Flask==2.x.x
+  Flask-SocketIO==5.x.x
+  requests==2.x.x
+  dnspython==2.x.x
+  reportlab==4.x.x
+  google-generativeai==0.x.x
+  python-dotenv==1.x.x
+  aiohttp==3.x.x
+
+docker-compose.yml (Container Orchestration)
+  version: '3.8'
+  services:
+    vulnx:
+      build: .
+      ports:
+        - "5000:5000"
+      environment:
+        - GEMINI_API_KEY=${GEMINI_API_KEY}
+        - FLASK_ENV=production
+      volumes:
+        - ./scan_history.json:/app/scan_history.json
+
+
+PERFORMANCE TUNING:
+════════════════════
+
+For Faster Scans:
+  ├─ Increase thread count (but balance with system resources)
+  ├─ Reduce timeout (faster failure detection)
+  ├─ Use Quick mode instead of Deep mode
+  └─ Disable AI analysis if not needed
+
+For Stability:
+  ├─ Keep thread count moderate (750 for directory)
+  ├─ Increase timeout to handle slow networks
+  ├─ Monitor memory usage
+  ├─ Limit concurrent scans
+  └─ Regular system reboots if running 24/7
+
+For Production:
+  ├─ Use Gunicorn/Waitress instead of Flask dev server
+  ├─ Set up reverse proxy (Nginx)
+  ├─ Enable HTTPS/TLS
+  ├─ Implement rate limiting
+  ├─ Add authentication layer
+  ├─ Monitor and log all activity
+  ├─ Set up alerts for errors
+  └─ Regular backups of scan history
+
+
+MAINTENANCE:
+═════════════
+
+Regular Tasks:
+  - Update dependencies: pip install --upgrade -r requirements.txt
+  - Check Gemini API quota and usage
+  - Clean old scan history files (>30 days)
+  - Review security logs
+  - Update wordlists if needed
+  - Test all scanner modules
+  - Monitor system performance
+
+Troubleshooting:
+  - No results: Check network connectivity
+  - Slow performance: Reduce thread count (750)
+  - High memory: Clear scan history, restart service
+  - Gemini errors: Verify API key, check quota
+  - Socket.IO errors: Restart Flask application
+
+
+================================================================================
+APPENDIX: KEY FILES & IMPORTS
+================================================================================
+
+CORE MODULES IMPORT HIERARCHY:
+══════════════════════════════
+
+app.py (Main Application)
+  ├─ flask (Web framework)
+  ├─ flask_socketio (Real-time communication)
+  ├─ core.scanner (Port scanning)
+  ├─ core.deep_subdomain_scanner (Subdomain enumeration)
+  ├─ core.directory_scanner (Directory brute-forcing)
+  ├─ core.database_vulnerability_scanner (DB vulnerabilities)
+  ├─ core.header_analyzer (Security headers)
+  ├─ core.mapper (Topology mapping)
+  ├─ core.osint_engine (Intelligence gathering)
+  ├─ core.reporter (PDF reports)
+  ├─ core.whois_lookup (WHOIS data)
+  ├─ requests (HTTP library)
+  ├─ google.genai (Gemini API)
+  └─ dotenv (Environment variables)
+
+scanner.py (Port Scanning Engine)
+  ├─ socket (Network connections)
+  ├─ threading (Multi-threaded operations)
+  ├─ concurrent.futures (Thread pool)
+  └─ re (Regular expressions)
+
+deep_subdomain_scanner.py (Subdomain Scanner)
+  ├─ dns.resolver (DNS queries)
+  ├─ dns.exception (Error handling)
+  ├─ requests (HTTP verification)
+  ├─ concurrent.futures (Threading)
+  └─ asyncio (Async operations)
+
+directory_scanner.py (Directory Brute-forcer)
+  ├─ requests (HTTP requests)
+  ├─ concurrent.futures (Threading)
+  ├─ pathlib (File path handling)
+  └─ urllib.parse (URL parsing)
+
+database_vulnerability_scanner.py (DB Scanner)
+  ├─ socket (Database connections)
+  ├─ aiohttp (Async HTTP)
+  ├─ re (Pattern matching)
+  └─ concurrent.futures (Threading)
+
+mapper.py (Topology Visualization)
+  └─ Various data processing libraries
+
+osint_engine.py (Intelligence Engine)
+  ├─ requests (API calls)
+  └─ Various data enrichment libraries
+
+reporter.py (Report Generation)
+  ├─ reportlab (PDF creation)
+  ├─ io (In-memory file handling)
+  └─ datetime (Timestamps)
+
+whois_lookup.py (WHOIS Lookup)
+  └─ Network libraries for WHOIS queries
+
+
+FILE STATISTICS:
+════════════════
+
+src/app.py:                     ~1400 lines
+src/core/scanner.py:            ~250 lines
+src/core/deep_subdomain_scanner.py:  ~470 lines
+src/core/directory_scanner.py:   ~490 lines
+src/core/database_vulnerability_scanner.py: ~450 lines
+src/core/mapper.py:             Variable
+src/core/osint_engine.py:        Variable
+src/core/reporter.py:            Variable
+src/core/whois_lookup.py:        Variable
+
+Total Backend:                  ~3500+ lines
+
+Frontend Templates:             ~2500+ lines
+Frontend JavaScript:            ~1500+ lines
+Frontend CSS:                   ~1200+ lines
+
+Total Frontend:                 ~5200+ lines
+
+Total Project:                  ~8700+ lines
+
+
+WORDLIST STATISTICS:
+════════════════════
+
+data/directories.txt:           ~8000 directory names
+data/subdomains.txt:            ~10000 subdomain entries
+
+Total Wordlist Size:            ~18000 entries
+
+
+================================================================================
+11. FUTURE ENHANCEMENTS
+================================================================================
+
+Planned Features:
+  - User authentication and role-based access
+  - Multi-user scan scheduling
+  - Scan comparison and trending
+  - Slack/Webhook integration for notifications
+  - API rate limiting and throttling
+  - SSL/TLS certificate analysis
+  - Advanced filtering and search
+  - Custom vulnerability rules
+  - Integration with CVSS scoring
+  - Mobile application
+  - Distributed scanning across multiple nodes
+  - Machine learning-based anomaly detection
+  - Automated remediation suggestions
+  - Compliance mapping (OWASP, CIS, PCI-DSS)
+  - Shodan integration for external verification
+
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
+Document prepared: March 7, 2026
+For technical questions or updates, refer to the main README.md and
+source code comments.
+

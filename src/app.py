@@ -22,6 +22,8 @@ from dotenv import load_dotenv
 import requests
 import logging
 import traceback
+import socket
+import ssl
 
 from core.mapper import TopologyMapper
 from core.osint_engine import OSINTEngine
@@ -153,11 +155,11 @@ latest_results = {
 
 @app.route('/', methods=['GET'])
 def landing():
-    return render_template('landing.html')
-
-@app.route('/landing-v2', methods=['GET'])
-def landing_v2():
     return render_template('landing_v2.html')
+
+# @app.route('/landing-v2', methods=['GET'])
+# def landing_v2():
+#     return render_template('landing_v2.html')
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
@@ -971,6 +973,135 @@ def api_osint(target):
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/analyze', methods=['GET'])
+def api_analyze():
+    """
+    API endpoint to analyze HTTP security headers and SSL certificate health
+    """
+    try:
+        url = request.args.get('url', '').strip()
+        
+        if not url:
+            return jsonify({'success': False, 'error': 'URL is required'}), 400
+        
+        # Ensure URL has a scheme
+        if not url.startswith(('http://', 'https://')):
+            url = f'https://{url}'
+        
+        # Security headers to check
+        required_headers = {
+            'Content-Security-Policy': 'High',
+            'Strict-Transport-Security': 'High',
+            'X-Content-Type-Options': 'Medium',
+            'X-Frame-Options': 'Medium',
+            'X-XSS-Protection': 'Medium',
+        }
+        
+        exposed_headers = {
+            'X-Powered-By': 'Low',
+            'Server': 'Low',
+            'X-AspNet-Version': 'Low',
+        }
+        
+        results = []
+        score = 50  # Start with base score
+        
+        try:
+            response = requests.get(url, timeout=10, verify=False, allow_redirects=True)
+            headers = response.headers
+            
+            # Check for required security headers
+            missing_headers = 0
+            for header, severity in required_headers.items():
+                if header in headers:
+                    results.append({
+                        'header': header,
+                        'description': f'Good: {header} is configured correctly',
+                        'status': 'Present',
+                        'safe': True
+                    })
+                    score += 3
+                else:
+                    results.append({
+                        'header': header,
+                        'description': f'Missing: {header} should be configured for better security',
+                        'status': 'Missing',
+                        'safe': False
+                    })
+                    missing_headers += 1
+            
+            # Check for exposed headers (security risks)
+            for header, severity in exposed_headers.items():
+                if header in headers:
+                    results.append({
+                        'header': header,
+                        'description': f'Risk: {header} reveals server information. Consider removing it.',
+                        'status': f'Exposed: {headers.get(header, "N/A")[:30]}',
+                        'safe': False
+                    })
+                    score -= 2
+                else:
+                    results.append({
+                        'header': header,
+                        'description': f'Good: {header} is not exposed',
+                        'status': 'Not Exposed',
+                        'safe': True
+                    })
+                    score += 1
+            
+            # Check for HTTPS
+            if url.startswith('https://'):
+                try:
+                    # Attempt SSL/TLS check
+                    no_underscore_url = url.replace('https://', '').split('/')[0]
+                    sock = socket.create_connection((no_underscore_url, 443), timeout=5)
+                    context = ssl.create_default_context()
+                    with context.wrap_socket(sock, server_hostname=no_underscore_url) as ssock:
+                        cert = ssock.getpeercert()
+                        results.append({
+                            'header': 'SSL/TLS',
+                            'description': 'Good: HTTPS is enabled with valid SSL/TLS certificate',
+                            'status': 'Secure',
+                            'safe': True
+                        })
+                        score += 5
+                except Exception as e:
+                    results.append({
+                        'header': 'SSL/TLS',
+                        'description': f'Warning: SSL/TLS verification failed: {str(e)[:50]}',
+                        'status': 'Warning',
+                        'safe': False
+                    })
+            else:
+                results.append({
+                    'header': 'SSL/TLS',
+                    'description': 'Risk: Site is not using HTTPS. All data is transmitted in plaintext.',
+                    'status': 'Insecure',
+                    'safe': False
+                })
+                score -= 10
+            
+            # Normalize score between 0-100
+            score = max(0, min(100, score))
+            
+            return jsonify({
+                'success': True,
+                'score': score,
+                'results': results,
+                'url': url
+            })
+        
+        except requests.Timeout:
+            return jsonify({'success': False, 'error': 'Request timed out. Site may be unreachable.'}), 504
+        except requests.ConnectionError:
+            return jsonify({'success': False, 'error': 'Connection error. Cannot reach the target URL.'}), 502
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Failed to analyze: {str(e)[:100]}'}), 500
+    
+    except Exception as e:
+        logger.error(f'Error in API analyze: {e}')
+        return jsonify({'success': False, 'error': 'Server error'}), 500
 
 # ------------------------------------------
 

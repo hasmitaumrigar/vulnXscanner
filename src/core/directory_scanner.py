@@ -76,7 +76,7 @@ class DirectoryScanner:
         if max_workers is not None:
             self.max_workers = max_workers
         else:
-            self.max_workers = 800 if self.use_deep_scan else 150
+            self.max_workers = 750 if self.use_deep_scan else 450
         self.timeout = 8
         self.soft_404_signatures: List[str] = []
         self.soft_404_length: int = None
