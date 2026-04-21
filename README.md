@@ -1434,9 +1434,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ### 💻 Lead Developer & Maintainer
 **Shubham Yadav**
 
-### 👥 Core Development Team
-**Md Farhan** • **Uday Shankar Singh**
-
 ---
 
 ### ⭐ If you like this project, please give it a star on GitHub! ⭐
