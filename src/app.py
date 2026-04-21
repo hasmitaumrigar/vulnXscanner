@@ -111,7 +111,7 @@ def add_security_headers(response):
         "font-src 'self';"
 
     )
-
+    response.headers.remove('Server')
     return response
 # Use threading mode for broad compatibility
 # Configure with longer timeouts and ping/pong to keep connection alive during long scans
